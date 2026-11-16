@@ -11,6 +11,7 @@ import { toast } from "@/components/ui/toaster";
 import { Modal } from "@/components/ui/modal";
 import { AtribucionFotoProducto } from "@/components/tienda/atribucion-foto-producto";
 import { ImagenProducto } from "@/components/ui/imagen-producto";
+import { TextoFormateado } from "@/components/ui/texto-formateado";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -141,7 +142,9 @@ export function QuickViewProducto({ producto, abierto, onCerrar }: Props) {
             <p className="texto-jp mt-1 text-sm text-marron/50">{producto.nombreOriginal}</p>
           )}
 
-          <p className="mt-2 text-sm leading-relaxed text-marron/70">{producto.descripcion}</p>
+          <p className="mt-2 text-sm leading-relaxed text-marron/70">
+            <TextoFormateado texto={producto.descripcion} />
+          </p>
 
           <div className="mt-3 flex items-baseline gap-2">
             <span className="text-2xl font-black text-tomate">{formatPEN(producto.precio)}</span>

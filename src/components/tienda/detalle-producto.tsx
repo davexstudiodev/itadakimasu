@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/toaster";
 import { SelectorCantidad } from "@/components/ui/quantity-stepper";
 import { Estrellas } from "@/components/ui/rating";
 import { ImagenProducto } from "@/components/ui/imagen-producto";
+import { TextoFormateado } from "@/components/ui/texto-formateado";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -145,7 +146,9 @@ export function DetalleProducto({ producto, envioGratisDesde }: Props) {
           </span>
         </div>
 
-        <p className="mt-4 text-sm leading-relaxed text-marron/75">{producto.descripcion}</p>
+        <p className="mt-4 text-sm leading-relaxed text-marron/75">
+          <TextoFormateado texto={producto.descripcion} />
+        </p>
 
         {/* Añadir */}
         <div className="mt-6 flex flex-wrap items-center gap-3">

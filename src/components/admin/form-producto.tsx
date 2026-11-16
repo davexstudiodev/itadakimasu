@@ -246,6 +246,9 @@ export function FormProducto({ producto, categorias, marcas }: Props) {
                 placeholder="Historia del producto, cómo se come, maridajes…"
                 className="campo min-h-28 resize-y"
               />
+              <p className="mt-1.5 text-xs text-marron/55">
+                En ambas descripciones: <code>**negrita**</code> para negrita y <code>/cursiva/</code> para cursiva. Escríbelas sin espacios dentro de los signos.
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">

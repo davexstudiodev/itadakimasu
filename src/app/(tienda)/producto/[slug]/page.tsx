@@ -7,6 +7,7 @@ import { DetalleProducto } from "@/components/tienda/detalle-producto";
 import { FormResena } from "@/components/tienda/form-resena";
 import { ProductCard } from "@/components/tienda/product-card";
 import { Estrellas } from "@/components/ui/rating";
+import { TextoFormateado, textoSinFormato } from "@/components/ui/texto-formateado";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -18,10 +19,10 @@ export async function generateMetadata({ params }: Props) {
   if (!producto) return { title: "Producto no encontrado — ITADAKIMASU" };
   return {
     title: `${producto.nombre} — ITADAKIMASU`,
-    description: producto.descripcion,
+    description: textoSinFormato(producto.descripcion),
     openGraph: {
       title: `${producto.nombre} | ITADAKIMASU`,
-      description: producto.descripcion,
+      description: textoSinFormato(producto.descripcion),
       images: producto.imagenes[0] ? [{ url: producto.imagenes[0] }] : undefined,
     },
   };
@@ -50,7 +51,7 @@ export default async function PaginaProducto({ params }: Props) {
     "@type": "Product",
     name: producto.nombre,
     image: producto.imagenes,
-    description: producto.descripcion,
+    description: textoSinFormato(producto.descripcion),
     brand: { "@type": "Brand", name: producto.marcaSlug },
     sku: producto.id,
     offers: {
@@ -114,8 +115,8 @@ export default async function PaginaProducto({ params }: Props) {
             {producto.descripcionLarga && (
               <div className="sm:col-span-2">
                 <h3 className="text-sm font-bold uppercase tracking-wide text-tomate">Descripción</h3>
-                <p className="mt-2 text-sm leading-relaxed text-marron/75">
-                  {producto.descripcionLarga}
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-marron/75">
+                  <TextoFormateado texto={producto.descripcionLarga} />
                 </p>
               </div>
             )}
