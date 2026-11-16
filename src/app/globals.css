@@ -1,0 +1,240 @@
+@import "tailwindcss";
+
+/* ============================================================
+   ITADAKIMASU — Design tokens
+   Paleta cálida inspirada en empaques japoneses y coreanos
+   ============================================================ */
+
+@theme {
+  /* Colores de marca */
+  --color-crema: #fff5e9;
+  --color-beige: #f3e4d2;
+  --color-beige-dark: #e6d0b6;
+  --color-tomate: #d94b38;
+  --color-tomate-dark: #b93a2a;
+  --color-tomate-soft: #f0c4bd;
+  --color-naranja: #f4a261;
+  --color-naranja-dark: #e0873f;
+  --color-marron: #382820;
+  --color-marron-soft: #5c463a;
+  --color-rosa: #e9b8ad;
+  --color-rosa-dark: #d99a8c;
+  --color-hojita: #7a8f5a;
+  --color-crema-dark: #f7e8d5;
+
+  /* Familias tipográficas (inyectadas desde layout.tsx) */
+  --font-display: var(--font-display), "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: var(--font-body), var(--font-kr), "Hiragino Sans", "Yu Gothic",
+    sans-serif;
+  --font-kr: var(--font-kr), sans-serif;
+
+  /* Radios y sombras suaves */
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 2px rgba(56, 40, 32, 0.04),
+    0 8px 24px -12px rgba(56, 40, 32, 0.18);
+  --shadow-card-hover: 0 2px 4px rgba(56, 40, 32, 0.05),
+    0 18px 40px -18px rgba(56, 40, 32, 0.3);
+
+  --animate-fade-up: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease both;
+  --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop {
+    from {
+      transform: scale(0.92);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes shimmer {
+    from {
+      background-position: -200% 0;
+    }
+    to {
+      background-position: 200% 0;
+    }
+  }
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-crema);
+  color: var(--color-marron);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: var(--color-tomate);
+  color: var(--color-crema);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-tomate);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar discreta */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-beige);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-beige-dark);
+  border-radius: 999px;
+  border: 2px solid var(--color-beige);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-rosa-dark);
+}
+
+/* ============================================================
+   Componentes base reutilizables
+   ============================================================ */
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-full text-sm
+    font-semibold transition-all duration-200 disabled:pointer-events-none
+    disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+
+@layer components {
+  .contenedor {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .btn-primary {
+    @apply btn bg-tomate text-crema hover:bg-tomate-dark
+      focus-visible:outline-tomate active:scale-[0.98] shadow-[0_10px_24px_-14px_rgba(217,75,56,0.9)];
+  }
+
+  .btn-secondary {
+    @apply btn bg-marron text-crema hover:bg-marron-soft active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply btn border border-marron/20 bg-white/70 text-marron hover:border-marron/40
+      hover:bg-white active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply btn text-marron hover:bg-beige/70;
+  }
+
+  .campo {
+    @apply w-full rounded-xl border border-beige-dark bg-white px-4 py-2.5 text-base sm:text-sm
+      text-marron placeholder:text-marron/40 transition-colors
+      focus:border-tomate focus:outline-none focus:ring-4 focus:ring-tomate/10
+      disabled:bg-beige/50 disabled:text-marron/50;
+  }
+
+  .campo-error {
+    @apply border-tomate focus:border-tomate focus:ring-tomate/15;
+  }
+
+  .etiqueta {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-marron/60;
+  }
+
+  .tarjeta {
+    @apply rounded-card border border-beige-dark/60 bg-white shadow-card;
+  }
+
+  .titulo-seccion {
+    @apply font-display text-2xl font-bold tracking-tight text-marron sm:text-3xl;
+  }
+
+  .skeleton {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-beige) 0%,
+      var(--color-crema-dark) 50%,
+      var(--color-beige) 100%
+    );
+    background-size: 200% 100%;
+    animation: var(--animate-shimmer);
+  }
+
+  /* Patrón sutil tipo "seigaiha" (olas japonesas) de fondo */
+  .patron-olas {
+    background-image: radial-gradient(
+        circle at 50% 100%,
+        transparent 33%,
+        rgba(217, 75, 56, 0.06) 34%,
+        rgba(217, 75, 56, 0.06) 41%,
+        transparent 42%,
+        transparent 50%,
+        rgba(217, 75, 56, 0.06) 51%,
+        rgba(217, 75, 56, 0.06) 58%,
+        transparent 59%
+      ),
+      radial-gradient(
+        circle at 0% 100%,
+        transparent 33%,
+        rgba(217, 75, 56, 0.06) 34%,
+        rgba(217, 75, 56, 0.06) 41%,
+        transparent 42%,
+        transparent 50%,
+        rgba(217, 75, 56, 0.06) 51%,
+        rgba(217, 75, 56, 0.06) 58%,
+        transparent 59%
+      ),
+      radial-gradient(
+        circle at 100% 100%,
+        transparent 33%,
+        rgba(217, 75, 56, 0.06) 34%,
+        rgba(217, 75, 56, 0.06) 41%,
+        transparent 42%,
+        transparent 50%,
+        rgba(217, 75, 56, 0.06) 51%,
+        rgba(217, 75, 56, 0.06) 58%,
+        transparent 59%
+      );
+    background-size: 72px 36px;
+    background-position: 0 0, -36px 0, 36px 0;
+  }
+}
+
+/* Utilidades de texto */
+@utility texto-marca {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+@utility texto-jp {
+  font-family: var(--font-display), "Hiragino Sans", "Yu Gothic", sans-serif;
+}

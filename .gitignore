@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.next/
+out/
+build/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Debug / OS
+npm-debug.log*
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# Testing
+playwright-report/
+test-results/
+coverage/
+
+# Datos locales del modo demo (se regeneran con la semilla)
+data/*.json
+data/*.tmp
+!data/.gitkeep
