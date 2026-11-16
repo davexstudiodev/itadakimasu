@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Truck, Receipt, User, Clock } from "lucide-react";
 import { getProvider } from "@/lib/data";
 import { formatPEN, formatFecha } from "@/lib/utils/format";
 import { EstadoPedidoBadges } from "@/components/tienda/estado-pedido";
 import { AccionesPedido } from "@/components/admin/acciones-pedido";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 
 export const metadata: Metadata = { title: "Detalle de pedido" };
 
@@ -68,7 +68,7 @@ export default async function PaginaDetallePedidoAdmin({ params }: Props) {
               {pedido.items.map((i) => (
                 <li key={i.productoId} className="flex items-center gap-3 py-3 first:pt-0">
                   <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-crema">
-                    <Image src={i.imagen} alt={i.nombre} fill sizes="48px" className="object-cover" />
+                    <ImagenProducto src={i.imagen || "/logo.png"} alt={i.nombre} fill sizes="48px" className="object-cover" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <Link

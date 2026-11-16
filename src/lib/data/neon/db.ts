@@ -1,7 +1,10 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { Pool, types } from "pg";
 import type { PoolClient, QueryResultRow } from "pg";
+import { headers } from "next/headers";
+import { obtenerUsuarioId } from "@/lib/auth/session";
 
 /* ============================================================
    Conexión a PostgreSQL (Neon) para el proveedor DATA_PROVIDER=neon.
@@ -22,6 +25,15 @@ types.setTypeParser(1184, (v: string) => aISO(v));
 types.setTypeParser(1114, (v: string) => aISO(v));
 
 let pool: Pool | null = null;
+const identidadRls = new AsyncLocalStorage<{ id: string; email: string }>();
+
+/** Ejecuta operaciones de Neon con identidad recibida tras autenticar en Supabase. */
+export function withRlsIdentity<T>(
+  identidad: { id: string; email: string },
+  trabajo: () => Promise<T>
+): Promise<T> {
+  return identidadRls.run(identidad, trabajo);
+}
 
 export function getPool(): Pool {
   if (!pool) {
@@ -48,8 +60,10 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   sql: string,
   params: unknown[] = []
 ): Promise<T[]> {
-  const resultado = await getPool().query<T>(sql, params as never[]);
-  return resultado.rows;
+  return transaccion(async (cliente) => {
+    const resultado = await cliente.query<T>(sql, params as never[]);
+    return resultado.rows;
+  });
 }
 
 /** Primera fila o null. */
@@ -68,6 +82,7 @@ export async function transaccion<T>(
   const cliente = await getPool().connect();
   try {
     await cliente.query("BEGIN");
+    await establecerIdentidadRls(cliente);
     const resultado = await fn(cliente);
     await cliente.query("COMMIT");
     return resultado;
@@ -77,6 +92,38 @@ export async function transaccion<T>(
   } finally {
     cliente.release();
   }
+}
+
+/**
+ * Identidad de confianza para las políticas RLS de Neon.
+ * En modo Supabase, proxy.ts valida el token y reemplaza estos headers antes
+ * de que la petición llegue a la aplicación. En modo local, se verifica la
+ * cookie firmada del servidor. Los valores son locales a la transacción.
+ */
+async function establecerIdentidadRls(cliente: PoolClient): Promise<void> {
+  const contexto = identidadRls.getStore();
+  let usuarioId = contexto?.id ?? "";
+  let correo = contexto?.email ?? "";
+
+  try {
+    if (contexto) {
+      // Sign-up y sign-in pueden consultar Neon antes de que la próxima
+      // petición atraviese proxy.ts; el contexto proviene del resultado Auth.
+    } else if ((process.env.AUTH_MODE ?? "local").toLowerCase() === "supabase") {
+      const h = await headers();
+      usuarioId = h.get("x-ita-user-id") ?? "";
+      correo = h.get("x-ita-user-email") ?? "";
+    } else {
+      usuarioId = (await obtenerUsuarioId()) ?? "";
+    }
+  } catch {
+    // Jobs/tests sin petición web quedan como visitante sin identidad.
+  }
+
+  await cliente.query(
+    "SELECT set_config('app.user_id', $1, true), set_config('app.user_email', $2, true)",
+    [usuarioId, correo]
+  );
 }
 
 /** Cierra el pool (usado en tests y en el apagado ordenado). */

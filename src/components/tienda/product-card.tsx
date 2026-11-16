@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Heart, ShoppingBag, Star, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Producto } from "@/types";
@@ -11,6 +10,7 @@ import { useCarrito } from "@/store/carrito";
 import { useFavoritos } from "@/store/favoritos";
 import { toast } from "@/components/ui/toaster";
 import { QuickViewProducto } from "@/components/tienda/quick-view";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -71,13 +71,13 @@ export function ProductCard({ producto, indice = 0, compacto }: Props) {
         className="flex h-full flex-col overflow-hidden rounded-card border border-beige-dark/60 bg-white shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-tomate/30 hover:shadow-card-hover"
       >
         {/* Imagen */}
-        <div className="relative aspect-square overflow-hidden bg-crema">
-          <Image
+        <div className="relative aspect-square overflow-hidden bg-white">
+          <ImagenProducto
             src={producto.imagenes[0] ?? "/logo.png"}
             alt={producto.nombre}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            className="object-contain p-3 transition-transform duration-500 group-hover:scale-105"
           />
 
           {/* Insignias */}

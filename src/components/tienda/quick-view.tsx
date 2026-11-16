@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, ShoppingBag, Star } from "lucide-react";
 import type { Producto } from "@/types";
@@ -10,6 +9,8 @@ import { formatPEN, porcentajeDescuento } from "@/lib/utils/format";
 import { useCarrito } from "@/store/carrito";
 import { toast } from "@/components/ui/toaster";
 import { Modal } from "@/components/ui/modal";
+import { AtribucionFotoProducto } from "@/components/tienda/atribucion-foto-producto";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -75,13 +76,13 @@ export function QuickViewProducto({ producto, abierto, onCerrar }: Props) {
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
         {/* Galería */}
         <div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-card border border-beige-dark/60 bg-crema sm:aspect-square sm:bg-white">
-            <Image
+          <div className="relative aspect-[4/3] overflow-hidden rounded-card border border-beige-dark/60 bg-white sm:aspect-square">
+            <ImagenProducto
               src={imagenes[imagenActiva] ?? imagenes[0]}
               alt={producto.nombre}
               fill
               sizes="(max-width: 640px) 100vw, 45vw"
-              className="object-contain sm:object-cover"
+              className="object-contain p-2"
             />
             {descuento > 0 && !agotado && (
               <span className="absolute left-3 top-3 rounded-full bg-tomate px-2.5 py-1 text-[11px] font-bold text-crema shadow-sm">
@@ -111,11 +112,15 @@ export function QuickViewProducto({ producto, abierto, onCerrar }: Props) {
                       : "border-beige-dark/60 opacity-60 hover:opacity-100"
                   )}
                 >
-                  <Image src={src} alt="" fill sizes="56px" className="object-cover" />
+                  <ImagenProducto src={src} alt="" fill sizes="56px" className="object-contain p-1" />
                 </button>
               ))}
             </div>
           )}
+          <p className="mt-1 text-center text-[10px] text-marron/50">
+            Imágenes de referencia; la presentación real puede variar.
+          </p>
+          <AtribucionFotoProducto slug={producto.slug} />
         </div>
 
         {/* Información */}

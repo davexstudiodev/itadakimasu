@@ -47,7 +47,7 @@ export async function guardarProducto(
     preparacion: String(formData.get("preparacion") ?? ""),
     ingredientes: String(formData.get("ingredientes") ?? ""),
     alergenos: String(formData.get("alergenos") ?? ""),
-    imagen: String(formData.get("imagen") ?? ""),
+    imagenes: String(formData.get("imagenes") ?? ""),
   });
   if (!parseado.success) return errorDeZod(parseado.error.issues);
 
@@ -74,7 +74,10 @@ export async function guardarProducto(
     categoriaSlug: d.categoriaSlug,
     marcaSlug: d.marcaSlug,
     pais: d.pais,
-    imagenes: [d.imagen || "/logo.png"],
+    imagenes: d.imagenes
+      .split(/\r?\n/)
+      .map((imagen) => imagen.trim())
+      .filter(Boolean),
     ingredientes: aListas(d.ingredientes),
     alergenos: aListas(d.alergenos),
     preparacion: d.preparacion || null,
@@ -127,6 +130,40 @@ export async function eliminarProducto(id: string): Promise<ResultadoAccion> {
   revalidatePath("/productos");
   revalidatePath(`/producto/${producto.slug}`);
   return { ok: true, datos: { mensaje: "Producto desactivado" } };
+}
+
+/** Elimina productos de forma permanente y conserva los snapshots de pedidos. */
+export async function eliminarProductosDefinitivamente(idsEntrada: unknown): Promise<ResultadoAccion> {
+  const auth = await exigirAdminAccion();
+  if ("resultado" in auth) return auth.resultado;
+  if (!Array.isArray(idsEntrada) || idsEntrada.length === 0 || idsEntrada.length > 60)
+    return { ok: false, error: "Selecciona entre 1 y 60 productos" };
+  if (idsEntrada.some((id) => typeof id !== "string" || !id.trim()))
+    return { ok: false, error: "Selección de productos no válida" };
+
+  const ids = [...new Set((idsEntrada as string[]).map((id) => id.trim()))];
+  const provider = getProvider();
+  const productos = await Promise.all(ids.map((id) => provider.getProductoPorId(id)));
+  if (productos.some((p) => !p)) return { ok: false, error: "Uno o más productos ya no existen" };
+
+  const cantidad = await provider.eliminarProductosDefinitivamente(ids);
+  if (cantidad !== ids.length)
+    return { ok: false, error: "No se pudieron eliminar todos los productos. Actualiza la lista e inténtalo de nuevo." };
+
+  const lista = productos.filter((p) => p !== null);
+  await provider.registrarAuditoria({
+    actor: auth.admin.email,
+    accion: "producto",
+    detalle: `Eliminó permanentemente ${lista.length} producto${lista.length === 1 ? "" : "s"}: ${lista.map((p) => `«${p.nombre}»`).join(", ")}`,
+  });
+
+  revalidatePath("/admin/productos");
+  revalidatePath("/productos");
+  for (const producto of lista) revalidatePath(`/producto/${producto.slug}`);
+  return {
+    ok: true,
+    datos: { mensaje: `${lista.length} producto${lista.length === 1 ? " eliminado" : "s eliminados"} permanentemente` },
+  };
 }
 
 /** Activa o desactiva un producto desde la tabla admin. */

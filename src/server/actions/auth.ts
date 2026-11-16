@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { randomBytes } from "node:crypto";
 import { getProvider } from "@/lib/data";
+import { withRlsIdentity } from "@/lib/data/neon/db";
 import { authSupabaseActivo } from "@/lib/auth/modo";
 import { crearClienteSoloLectura, crearClienteSupabase } from "@/lib/auth/supabase";
 import { crearSesion, destruirSesion, obtenerUsuarioId } from "@/lib/auth/session";
@@ -97,20 +98,24 @@ export async function registrar(
     }
 
     try {
-      const existente = await provider.getPerfilPorEmail(parseado.data.email);
-      if (!existente) {
-        await provider.crearPerfil({
-          id: data.user.id,
-          email: parseado.data.email,
-          nombre: parseado.data.nombre,
-          apellidos: parseado.data.apellidos,
+      await withRlsIdentity(
+        { id: data.user.id, email: data.user.email ?? parseado.data.email },
+        async () => {
+          const existente = await provider.getPerfilPorEmail(parseado.data.email);
+          if (!existente) {
+            await provider.crearPerfil({
+              id: data.user!.id,
+              email: parseado.data.email,
+              nombre: parseado.data.nombre,
+              apellidos: parseado.data.apellidos,
+            });
+          }
+          await provider.registrarAuditoria({
+            actor: parseado.data.email,
+            accion: "registro",
+            detalle: "Nueva cuenta creada",
+          });
         });
-      }
-      await provider.registrarAuditoria({
-        actor: parseado.data.email,
-        accion: "registro",
-        detalle: "Nueva cuenta creada",
-      });
     } catch (e) {
       // La cuenta en Supabase ya existe; el perfil se reconcilia en el primer login.
       console.error("[ITADAKIMASU] No se pudo crear el perfil tras el registro:", e);
@@ -132,6 +137,7 @@ export async function registrar(
       apellidos: parseado.data.apellidos,
     });
     await provider.guardarPasswordHash(id, await hashPassword(parseado.data.password));
+    await crearSesion(id);
     await provider.registrarAuditoria({
       actor: parseado.data.email,
       accion: "registro",
@@ -141,7 +147,6 @@ export async function registrar(
     return error("", (e as Error).message ?? "No se pudo crear la cuenta");
   }
 
-  await crearSesion(id);
   return { ok: true };
 }
 
@@ -176,33 +181,41 @@ export async function iniciarSesion(
     });
     if (fallo || !data.user) return error("", "Correo o contraseña incorrectos");
 
-    let perfil = await provider.getPerfilPorEmail(parseado.data.email);
-    if (!perfil) {
-      const meta = (data.user.user_metadata ?? {}) as Record<string, string>;
-      try {
-        perfil = await provider.crearPerfil({
-          id: data.user.id,
-          email: parseado.data.email,
-          nombre: meta.nombre || parseado.data.email.split("@")[0],
-          apellidos: meta.apellidos || "",
-          telefono: meta.telefono || undefined,
-        });
-      } catch (e) {
-        console.error("[ITADAKIMASU] No se pudo crear el perfil en el login:", e);
-        return error("", "No se pudo cargar tu cuenta. Contacta con soporte.");
-      }
+    let perfil: Awaited<ReturnType<typeof provider.getPerfilPorEmail>>;
+    try {
+      perfil = await withRlsIdentity(
+        { id: data.user.id, email: data.user.email ?? parseado.data.email },
+        async () => {
+          let usuario = await provider.getPerfilPorEmail(parseado.data.email);
+          if (!usuario) {
+            const meta = (data.user!.user_metadata ?? {}) as Record<string, string>;
+            usuario = await provider.crearPerfil({
+              id: data.user!.id,
+              email: parseado.data.email,
+              nombre: meta.nombre || parseado.data.email.split("@")[0],
+              apellidos: meta.apellidos || "",
+              telefono: meta.telefono || undefined,
+            });
+          }
+          if (usuario.activo) {
+            await provider.registrarAuditoria({
+              actor: usuario.email,
+              accion: "login",
+              detalle: "Inicio de sesión",
+            });
+          }
+          return usuario;
+        }
+      );
+    } catch (e) {
+      console.error("[ITADAKIMASU] No se pudo cargar el perfil:", e);
+      return error("", "No se pudo cargar tu cuenta. Contacta con soporte.");
     }
 
     if (!perfil.activo) {
       await supabase.auth.signOut();
       return error("", "Esta cuenta está desactivada. Contacta con soporte.");
     }
-
-    await provider.registrarAuditoria({
-      actor: perfil.email,
-      accion: "login",
-      detalle: "Inicio de sesión",
-    });
 
     const destino = String(formData.get("next") ?? "");
     if (destino.startsWith("/") && !destino.startsWith("//")) redirect(destino);

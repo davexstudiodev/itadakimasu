@@ -2,7 +2,7 @@
 
 Estado del proyecto por fases. ✅ completa · 🔄 en curso · ⬜ pendiente
 
-Última actualización: 15 de noviembre de 2026.
+Última actualización: 16 de noviembre de 2026.
 
 ## FASE 1 — Base del proyecto ✅
 
@@ -10,8 +10,9 @@ Estado del proyecto por fases. ✅ completa · 🔄 en curso · ⬜ pendiente
 - [x] Configuración de diseño: paleta cálida (crema `#FFF5E9`, beige `#F3E4D2`,
       rojo `#D94B38`, naranja `#F4A261`, marrón `#382820`, rosa `#E9B8AD`)
 - [x] Tipos de dominio (`src/types`) y esquemas Zod (`src/server/validations.ts`)
-- [x] Semilla de datos: 28 productos demo en PEN, categorías, marcas, cupones
-- [x] 28 SVGs de producto en `public/productos/`
+- [x] Semilla inicial sin productos demo; categorías, marcas y cupones
+- [x] Catálogo e imágenes de producto vaciados por solicitud del propietario;
+      los productos nuevos se cargarán desde el panel administrativo
 - [x] Auth: registro/login/logout, scrypt, cookie de sesión firmada, roles
 - [x] Stores de Zustand (carrito persistente + UI)
 - [x] UI base: botones (`.btn` como `@utility`), campos, toast, empty states
@@ -21,7 +22,7 @@ Estado del proyecto por fases. ✅ completa · 🔄 en curso · ⬜ pendiente
 
 - [x] Home (hero, trust strip, secciones, combos)
 - [x] Catálogo `/productos` con filtros, búsqueda y SEO (metadata)
-- [x] Ficha `/producto/[slug]` con reseñas y JSON-LD Product
+- [x] Ficha `/producto/[slug]` con galería, reseñas y JSON-LD Product
 - [x] Carrito y checkout (dirección, envío, pago, cupón)
 - [x] Confirmación de pedido con JSON-LD Order + limpieza de carrito
 - [x] Páginas de contenido: nosotros, contacto, FAQ, envíos y devoluciones,
@@ -43,7 +44,7 @@ automático por commit.
       configuración, newsletter, auditoría, contadores)
 - [x] Seed idempotente `db/migrations/002_seed.sql` generado por
       `scripts/generar-seed.mjs` desde `data/db.json`
-      (7 categorías, 16 marcas, 28 productos, 2 cupones, 4 reseñas, admin)
+      (7 categorías, 16 marcas, 0 productos, 2 cupones, 0 reseñas, admin)
 - [x] Driver `pg` + `@types/pg` instalados
 - [x] **Provider Neon** `src/lib/data/neon/provider.ts`: los ~55 métodos de
       `DataProvider` en SQL, con transacciones y `SELECT … FOR UPDATE`
@@ -86,22 +87,30 @@ automático por commit.
         `node-postgres` lo serializaba como literal de array de PG y el
         INSERT fallaba siempre → `JSON.stringify` explícito
 
-### Pendiente ⬜ (requiere credenciales de Dave)
+### Pendiente ⬜ (requiere decisiones y pruebas de producción)
 
-- [ ] Loguearse en Supabase, Neon, GitHub y Vercel (4 pestañas abiertas)
-- [ ] Crear proyecto Supabase → claves en `.env.local`
-      (desactivar "Confirm email" para registro instantáneo)
-- [ ] Crear proyecto Neon → `NEON_DATABASE_URL` → aplicar
-      `001_esquema.sql` y `002_seed.sql`
+- [x] Neon conectado; catálogo vaciado a petición del propietario.
+      Verificado: 0 productos. La semilla local y la de SQL ya no vuelven
+      a cargar el catálogo anterior. Se aplicó también la migración `005`.
+- [x] Proyecto Supabase `itadakimasu` activo y sus datos públicos
+      configurados en Vercel. Falta una URL de producción para completar
+      los redirects de Auth.
+- [x] Proyecto Vercel `itadakimasu` enlazado con el repositorio y con
+      las variables de Neon/Supabase configuradas en los tres entornos.
+      Todavía no tiene despliegues ni dominios asociados.
+- [ ] Definir `NEXT_PUBLIC_SITE_URL` y los redirects de Supabase Auth
+      después de obtener el dominio real de Vercel.
+- [ ] Hacer el primer despliegue y asociar un dominio a Vercel.
 - [ ] Probar E2E con `DATA_PROVIDER=neon` + `AUTH_MODE=supabase`
       (crear cuenta, comprar, admin, pedidos)
 - [ ] Crear cuenta admin en Supabase y promoverla:
       `UPDATE perfiles SET rol='admin' WHERE email='…'`
-- [ ] Repo en GitHub (git init + push) y proyecto Vercel con las
-      variables de entorno + deploy de producción
 - [ ] Supabase Storage: bucket de imágenes y subida desde el admin
       (hoy las imágenes son SVG estáticos en `public/`, funcionan en
       Vercel sin Storage)
+- [ ] Editor de contenido para que el admin cambie textos y secciones
+      estáticas de páginas (inicio, nosotros, FAQ y políticas); hoy esa
+      copia vive en el código y no se cambia desde el panel.
 - [ ] Actualizar `docs/CONFIGURACION.md` y `README.md` con los valores
       finales (URLs de producción)
 

@@ -62,12 +62,14 @@ src/
   store/             # stores de Zustand (carrito, UI)
   types/             # tipos de dominio
 public/logo.png      # logo oficial (Logos/1.png)
+public/productos/    # galerías ilustrativas; algunas incluyen fotos licenciadas
 ```
 
 ## Documentación
 
 - **[docs/CONFIGURACION.md](docs/CONFIGURACION.md)** — variables de entorno, modos de datos, semilla admin, Supabase, Playwright.
 - **[docs/TAREAS.md](docs/TAREAS.md)** — estado del proyecto por fases.
+- **[docs/LICENCIAS_IMAGENES.md](docs/LICENCIAS_IMAGENES.md)** — archivo de créditos de las fotos de demostración ya retiradas.
 
 ## Ámbito actual
 

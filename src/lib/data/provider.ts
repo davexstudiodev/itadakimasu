@@ -47,6 +47,12 @@ export interface ResultadoPaginado<T> {
   paginas: number;
 }
 
+export type EstadoAnonimizarClientes =
+  | "ok"
+  | "no_encontrado"
+  | "no_cliente"
+  | "pedido_activo";
+
 export interface EstadisticasDashboard {
   ventasTotales: number;
   ventasHoy: number;
@@ -94,6 +100,7 @@ export interface DataProvider {
   crearProducto(datos: Partial<Producto>): Promise<Producto>;
   actualizarProducto(id: string, datos: Partial<Producto>): Promise<Producto | null>;
   eliminarProducto(id: string): Promise<boolean>;
+  eliminarProductosDefinitivamente(ids: string[]): Promise<number>;
   listarProductosAdmin(filtro?: FiltroProductos): Promise<ResultadoPaginado<Producto>>;
 
   /* ---------- Inventario ---------- */
@@ -119,6 +126,7 @@ export interface DataProvider {
   actualizarPerfil(id: string, datos: Partial<Perfil>): Promise<Perfil | null>;
   listarUsuarios(q?: string): Promise<Perfil[]>;
   cambiarEstadoUsuario(id: string, activo: boolean): Promise<boolean>;
+  anonimizarClientes(ids: string[]): Promise<EstadoAnonimizarClientes>;
 
   /* ---------- Recuperación de contraseña ---------- */
   solicitarReset(email: string, token: string, expira: string): Promise<boolean>;

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { Receipt, ChevronRight } from "lucide-react";
 import { getUsuarioActual } from "@/lib/auth";
 import { getProvider } from "@/lib/data";
 import { formatPEN, formatFecha } from "@/lib/utils/format";
 import { EstadoPedidoBadges } from "@/components/tienda/estado-pedido";
 import { EstadoVacio } from "@/components/ui/empty-state";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 
 export const metadata: Metadata = {
   title: "Mis pedidos — ITADAKIMASU",
@@ -69,7 +69,7 @@ export default async function PaginaPedidos() {
           <ul className="mt-3 flex flex-wrap gap-2">
             {p.items.slice(0, 5).map((i) => (
               <li key={i.productoId} className="relative h-14 w-14 overflow-hidden rounded-lg bg-crema" title={i.nombre}>
-                <Image src={i.imagen} alt={i.nombre} fill sizes="56px" className="object-cover" />
+                <ImagenProducto src={i.imagen} alt={i.nombre} fill sizes="56px" className="object-cover" />
               </li>
             ))}
             {p.items.length > 5 && (

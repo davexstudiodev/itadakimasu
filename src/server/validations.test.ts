@@ -205,6 +205,12 @@ describe("esquemaProducto", () => {
     stockMinimo: 5,
     destacado: false,
     activo: true,
+    imagenes: [
+      "/productos/ramen.svg",
+      "/productos/ramen-vista-2.svg",
+      "/productos/ramen-vista-3.svg",
+      "/productos/ramen-vista-4.svg",
+    ].join("\n"),
   };
 
   it("acepta un producto válido", () => {
@@ -229,6 +235,16 @@ describe("esquemaProducto", () => {
 
   it("rechaza descripción muy corta", () => {
     expect(esquemaProducto.safeParse({ ...base, descripcion: "corta" }).success).toBe(false);
+  });
+
+  it("rechaza galerías con menos de cuatro imágenes o rutas repetidas", () => {
+    expect(esquemaProducto.safeParse({ ...base, imagenes: "/productos/ramen.svg" }).success).toBe(false);
+    expect(
+      esquemaProducto.safeParse({
+        ...base,
+        imagenes: Array(4).fill("/productos/ramen.svg").join("\n"),
+      }).success
+    ).toBe(false);
   });
 });
 

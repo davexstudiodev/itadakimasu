@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, Trash2, ArrowRight, ShieldCheck } from "lucide-react";
 import { useCarrito, subtotalDe, unidadesDe } from "@/store/carrito";
@@ -10,6 +9,7 @@ import { EstadoVacio } from "@/components/ui/empty-state";
 import { formatPEN, plural } from "@/lib/utils/format";
 import { ConfirmarAccion } from "@/components/ui/confirm-dialog";
 import { toast } from "@/components/ui/toaster";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 
 /** Vista del carrito (estado local persistido). */
 export function CarritoCliente() {
@@ -68,7 +68,7 @@ export function CarritoCliente() {
                 href={`/producto/${item.slug}`}
                 className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-crema sm:h-24 sm:w-24"
               >
-                <Image
+                <ImagenProducto
                   src={item.imagen}
                   alt={item.nombre}
                   fill

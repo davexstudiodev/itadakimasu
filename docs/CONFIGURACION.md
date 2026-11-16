@@ -15,10 +15,11 @@ cp .env.example .env.local
 | ----------------------------- | ----------- | ------------------------------------------------------------------ |
 | `DATA_PROVIDER`               | Sí          | `local` (demo, por defecto) o `neon` (PostgreSQL en Neon).          |
 | `AUTH_MODE`                   | Sí          | `local` (scrypt + cookie, por defecto) o `supabase` (Supabase Auth). |
-| `NEON_DATABASE_URL`           | Solo neon   | Connection string de Neon (usa la **pooled** en serverless).       |
-| `NEXT_PUBLIC_SUPABASE_URL`    | Solo supabase | URL del proyecto Supabase.                                        |
+| `NEON_DATABASE_URL`           | Solo neon   | URL pooled de Neon con `itadakimasu_runtime` (`NOBYPASSRLS`). No usar la URL propietaria de migraciones en la app. |
+| `NEXT_PUBLIC_SUPABASE_URL`    | Auth o imágenes | URL del proyecto Supabase.                                       |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Solo supabase | Key pública (anon).                                               |
-| `SUPABASE_SERVICE_ROLE_KEY`   | Solo supabase | **Solo servidor.** Nunca exponer en cliente ni en el repo.         |
+| `SUPABASE_SERVICE_ROLE_KEY`   | Imágenes       | **Solo servidor.** Nunca exponer en cliente ni en el repo.         |
+| `SUPABASE_STORAGE_BUCKET`     | No             | Bucket público de imágenes; por defecto `producto-imagenes`.       |
 | `SESSION_SECRET`              | Recomendado | Secreto para firmar la cookie de sesión (`ita_session`, 30 días).  |
 | `NEXT_PUBLIC_SITE_URL`        | Sí          | URL pública (SEO, sitemap, OG y enlaces de Supabase Auth).         |
 | `RESEND_API_KEY` / `EMAIL_FROM` | No        | Correos transaccionales (solo modo `AUTH_MODE=local`).             |
@@ -51,15 +52,28 @@ solo habla con la interfaz `DataProvider`. La autenticación se conmuta con
 1. Crea un proyecto en [neon.tech](https://neon.tech).
 2. Aplica en el SQL Editor de Neon, en este orden:
    - `db/migrations/001_esquema.sql` (esquema)
-   - `db/migrations/002_seed.sql` (datos demo; idempotente, seguro de
-     re-ejecutar — se regenera con `node scripts/generar-seed.mjs`)
+   - `db/migrations/002_seed.sql` (datos demo; se regenera con
+     `node scripts/generar-seed.mjs`). Ejecútalo solo en una base vacía
+     de desarrollo: también crea perfiles, pedidos y reseñas de ejemplo.
+   - `db/migrations/005_actualizar_telefono_tienda.sql` (actualiza el
+     teléfono de demostración sin sobrescribir cambios del administrador)
 3. Pon `NEON_DATABASE_URL` (connection string **pooled**) en `.env.local`
    o en Vercel, y `DATA_PROVIDER=neon`.
 4. Reinicia el servidor. **No hay que tocar código.**
 
+La conexión de la app debe usar el rol `itadakimasu_runtime`, protegido por
+RLS. La migración `db/migrations/006_neon_rls.sql` activa políticas por
+cliente y administrador; ejecútala con la conexión propietaria de Neon.
+Reserva esa conexión propietaria para migraciones y usa la conexión de
+`itadakimasu_runtime` en Vercel.
+
 > El provider `src/lib/data/neon/provider.ts` replica la lógica del local
 > con SQL real: transacciones con `SELECT … FOR UPDATE` en stock/cupones y
 > contador atómico para los números `ITD-YYYY-NNNNN`.
+
+El catálogo comienza vacío. Agrega los productos y sus imágenes desde el
+panel administrativo; no ejecutes las antiguas migraciones `003` y `004`,
+que pertenecían al catálogo de demostración anterior.
 
 ### Autenticación: modo local (por defecto)
 
@@ -102,6 +116,13 @@ solo habla con la interfaz `DataProvider`. La autenticación se conmuta con
 Ruta independiente `/admin` (protegida; el cliente común ve 403):
 
 - Dashboard, productos, inventario, pedidos, cupones, usuarios, configuración.
+- Cada producto admite de 4 a 12 rutas de imagen distintas, una por línea.
+- El formulario acepta archivos JPG, PNG y WebP de hasta 4 MB, seleccionados
+  o arrastrados. Se guardan en Supabase Storage; el bucket público
+  `producto-imagenes` se crea en la primera subida si no existe.
+- Para subir imágenes, configura `NEXT_PUBLIC_SUPABASE_URL` y
+  `SUPABASE_SERVICE_ROLE_KEY` en `.env.local` y en Vercel. El rol de servicio
+  solo se usa en el servidor.
 - Toda mutación pasa por server actions con: guard de admin + rate limit +
   registro de auditoría + `revalidatePath`.
 

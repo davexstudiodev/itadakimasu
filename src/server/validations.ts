@@ -205,8 +205,25 @@ export const esquemaProducto = z.object({
   preparacion: z.string().max(400).optional().or(z.literal("")),
   ingredientes: z.string().max(1000).optional().or(z.literal("")),
   alergenos: z.string().max(300).optional().or(z.literal("")),
-  imagen: z.string().max(300).optional().or(z.literal("")),
-});
+  imagenes: z.string().max(2400),
+}).refine(
+  (d) => {
+    const imagenes = d.imagenes
+      .split(/\r?\n/)
+      .map((imagen) => imagen.trim())
+      .filter(Boolean);
+    return (
+      imagenes.length >= 4 &&
+      imagenes.length <= 12 &&
+      imagenes.every((imagen) => imagen.length <= 300) &&
+      new Set(imagenes).size === imagenes.length
+    );
+  },
+  {
+    path: ["imagenes"],
+    message: "Agrega entre 4 y 12 imágenes distintas (máximo 300 caracteres cada una)",
+  }
+);
 
 /* ---------------- Cupones (admin) ---------------- */
 

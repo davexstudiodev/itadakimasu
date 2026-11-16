@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { Heart, ShoppingBag, Check, Truck, ShieldCheck, RotateCcw } from "lucide-react";
 import type { Producto } from "@/types";
 import { formatPEN, porcentajeDescuento } from "@/lib/utils/format";
@@ -10,6 +9,7 @@ import { useFavoritos } from "@/store/favoritos";
 import { toast } from "@/components/ui/toaster";
 import { SelectorCantidad } from "@/components/ui/quantity-stepper";
 import { Estrellas } from "@/components/ui/rating";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 import { cn } from "@/lib/utils/cn";
 
 interface Props {
@@ -52,14 +52,14 @@ export function DetalleProducto({ producto, envioGratisDesde }: Props) {
     <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
       {/* ---------- Galería ---------- */}
       <div className="space-y-3">
-        <div className="relative aspect-square overflow-hidden rounded-card border border-beige-dark/60 bg-crema shadow-card">
-          <Image
+        <div className="relative aspect-square overflow-hidden rounded-card border border-beige-dark/60 bg-white shadow-card">
+          <ImagenProducto
             src={imagenes[imagenActiva]}
             alt={producto.nombre}
             fill
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
+            className="object-contain p-4"
           />
           {descuento > 0 && (
             <span className="absolute left-4 top-4 rounded-full bg-tomate px-3 py-1.5 text-xs font-bold text-crema shadow-sm">
@@ -82,15 +82,18 @@ export function DetalleProducto({ producto, envioGratisDesde }: Props) {
                 onClick={() => setImagenActiva(i)}
                 aria-label={`Ver imagen ${i + 1}`}
                 className={cn(
-                  "relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-crema transition-all",
+                  "relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white transition-all",
                   i === imagenActiva ? "border-tomate" : "border-transparent hover:border-beige-dark"
                 )}
               >
-                <Image src={img} alt="" fill sizes="80px" className="object-cover" />
+                <ImagenProducto src={img} alt="" fill sizes="80px" className="object-contain p-1" />
               </button>
             ))}
           </div>
         )}
+        <p className="text-center text-[11px] text-marron/50">
+          Imágenes de referencia; la presentación real puede variar.
+        </p>
       </div>
 
       {/* ---------- Información ---------- */}

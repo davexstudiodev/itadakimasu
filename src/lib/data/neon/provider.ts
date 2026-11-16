@@ -664,6 +664,23 @@ export const proveedorNeon: DataProvider = {
     return !!fila;
   },
 
+  async eliminarProductosDefinitivamente(ids): Promise<number> {
+    if (ids.length === 0) return 0;
+    return transaccion(async (c) => {
+      const existentes = await c.query<{ id: string }>(
+        `SELECT id FROM productos WHERE id = ANY($1::text[]) FOR UPDATE`,
+        [ids]
+      );
+      if (existentes.rows.length !== new Set(ids).size) return 0;
+      const r = await c.query<{ id: string }>(
+        `DELETE FROM productos WHERE id = ANY($1::text[]) RETURNING id`,
+        [ids]
+      );
+      // pedido_items no tiene FK a productos: conserva el snapshot histórico.
+      return r.rows.length;
+    });
+  },
+
   async listarProductosAdmin(filtro = {}): Promise<ResultadoPaginado<Producto>> {
     return paginarProductos({ ...filtro, incluirInactivos: true }, 60);
   },
@@ -809,6 +826,67 @@ export const proveedorNeon: DataProvider = {
       [activo, id]
     );
     return !!fila;
+  },
+
+  async anonimizarClientes(ids): Promise<"ok" | "no_encontrado" | "no_cliente" | "pedido_activo"> {
+    const unicos = [...new Set(ids)];
+    if (unicos.length === 0) return "no_encontrado";
+    return transaccion(async (c) => {
+      const perfiles = await c.query<{ id: string; email: string; rol: string }>(
+        `SELECT id, email, rol FROM perfiles WHERE id = ANY($1::text[]) FOR UPDATE`,
+        [unicos]
+      );
+      if (perfiles.rows.length !== unicos.length) return "no_encontrado";
+      if (perfiles.rows.some((p) => p.rol !== "customer")) return "no_cliente";
+
+      const pedidoActivo = await c.query<{ id: string }>(
+        `SELECT id FROM pedidos
+          WHERE usuario_id = ANY($1::text[])
+            AND estado NOT IN ('entregado', 'cancelado', 'reembolsado')
+          LIMIT 1`,
+        [unicos]
+      );
+      if (pedidoActivo.rows.length > 0) return "pedido_activo";
+
+      const direccionAnonima = JSON.stringify({
+        nombreCompleto: "Cuenta eliminada",
+        telefono: "",
+        departamento: "",
+        provincia: "",
+        distrito: "",
+        direccion: "",
+        referencia: null,
+        indicaciones: null,
+      });
+      for (const perfil of perfiles.rows) {
+        const idSeguro = perfil.id.replace(/[^a-zA-Z0-9-]/g, "") || "cuenta";
+        await c.query(
+          `UPDATE perfiles
+              SET email = $1, nombre = 'Cuenta eliminada', apellidos = '', telefono = NULL,
+                  password_hash = NULL, reset_token = NULL, reset_expires = NULL, activo = FALSE
+            WHERE id = $2`,
+          [`eliminado-${idSeguro}@cuenta.eliminada.invalid`, perfil.id]
+        );
+        await c.query(`DELETE FROM direcciones WHERE usuario_id = $1`, [perfil.id]);
+        await c.query(`DELETE FROM carrito_items WHERE usuario_id = $1`, [perfil.id]);
+        await c.query(`DELETE FROM favoritos WHERE usuario_id = $1`, [perfil.id]);
+        await c.query(`DELETE FROM newsletter WHERE lower(email) = lower($1)`, [perfil.email]);
+        await c.query(
+          `UPDATE pedidos
+              SET direccion = $1::jsonb,
+                  notas = NULL,
+                  historial = COALESCE(
+                    (SELECT jsonb_agg(jsonb_build_object('estado', item->>'estado', 'fecha', item->>'fecha'))
+                       FROM jsonb_array_elements(pedidos.historial) AS elem(item)),
+                    '[]'::jsonb
+                  )
+            WHERE usuario_id = $2`,
+          [direccionAnonima, perfil.id]
+        );
+        await c.query(`UPDATE resenas SET usuario_nombre = 'Cliente' WHERE usuario_id = $1`, [perfil.id]);
+      }
+      return "ok";
+    });
   },
 
   /* ---------------- Recuperación de contraseña (modo local) ---------------- */
@@ -1007,6 +1085,7 @@ export const proveedorNeon: DataProvider = {
 
   async crearPedido(datos: DatosPedido): Promise<{ ok: boolean; pedido?: Pedido; error?: string }> {
     return transaccion(async (c) => {
+      await c.query("SELECT set_config('app.operation', 'checkout', true)");
       // 1) Items validados y bloqueados contra la BD (nunca confiar en precios del cliente)
       const ids = datos.items.map((i) => i.productoId);
       if (ids.length === 0) return { ok: false, error: "El carrito está vacío" };
@@ -1320,6 +1399,7 @@ export const proveedorNeon: DataProvider = {
 
   async crearResena(resena): Promise<Resena> {
     return transaccion(async (c) => {
+      await c.query("SELECT set_config('app.operation', 'review', true)");
       const id = nuevoId("res");
       const creadaEn = ahora();
       await c.query(

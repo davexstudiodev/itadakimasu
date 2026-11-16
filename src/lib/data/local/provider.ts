@@ -248,6 +248,26 @@ export const proveedorLocal: DataProvider = {
     });
   },
 
+  async eliminarProductosDefinitivamente(ids): Promise<number> {
+    const unicos = [...new Set(ids)];
+    return transaccion((db) => {
+      const existentes = db.productos.filter((p) => unicos.includes(p.id));
+      if (existentes.length !== unicos.length) return 0;
+      const borrados = new Set(unicos);
+      db.productos = db.productos.filter((p) => !borrados.has(p.id));
+      db.resenas = db.resenas.filter((r) => !borrados.has(r.productoId));
+      db.movimientos = db.movimientos.filter((m) => !borrados.has(m.productoId));
+      for (const usuarioId of Object.keys(db.carritos)) {
+        db.carritos[usuarioId] = db.carritos[usuarioId].filter((i) => !borrados.has(i.productoId));
+      }
+      for (const usuarioId of Object.keys(db.favoritos)) {
+        db.favoritos[usuarioId] = db.favoritos[usuarioId].filter((productoId) => !borrados.has(productoId));
+      }
+      // Los artículos de pedidos son snapshots y se conservan al borrar el producto.
+      return unicos.length;
+    });
+  },
+
   async listarProductosAdmin(filtro = {}): Promise<ResultadoPaginado<Producto>> {
     return consultar((db) =>
       paginar(
@@ -364,6 +384,54 @@ export const proveedorLocal: DataProvider = {
       if (!u) return false;
       u.activo = activo;
       return true;
+    });
+  },
+
+  async anonimizarClientes(ids): Promise<"ok" | "no_encontrado" | "no_cliente" | "pedido_activo"> {
+    const unicos = [...new Set(ids)];
+    return transaccion((db) => {
+      const usuarios = db.usuarios.filter((u) => unicos.includes(u.id));
+      if (usuarios.length !== unicos.length) return "no_encontrado";
+      if (usuarios.some((u) => u.rol !== "customer")) return "no_cliente";
+      const terminales = new Set(["entregado", "cancelado", "reembolsado"]);
+      if (db.pedidos.some((p) => unicos.includes(p.usuarioId) && !terminales.has(p.estado)))
+        return "pedido_activo";
+
+      for (const usuario of usuarios) {
+        const correoOriginal = usuario.email;
+        const idSeguro = usuario.id.replace(/[^a-zA-Z0-9-]/g, "") || "cuenta";
+        usuario.email = `eliminado-${idSeguro}@cuenta.eliminada.invalid`;
+        usuario.nombre = "Cuenta eliminada";
+        usuario.apellidos = "";
+        usuario.telefono = null;
+        usuario.activo = false;
+        usuario.passwordHash = "";
+        usuario.resetToken = null;
+        usuario.resetExpires = null;
+
+        db.direcciones = db.direcciones.filter((d) => d.usuarioId !== usuario.id);
+        delete db.carritos[usuario.id];
+        delete db.favoritos[usuario.id];
+        db.suscriptores = db.suscriptores.filter((s) => s.email.toLowerCase() !== correoOriginal.toLowerCase());
+        for (const pedido of db.pedidos.filter((p) => p.usuarioId === usuario.id)) {
+          pedido.direccion = {
+            nombreCompleto: "Cuenta eliminada",
+            telefono: "",
+            departamento: "",
+            provincia: "",
+            distrito: "",
+            direccion: "",
+            referencia: null,
+            indicaciones: null,
+          };
+          pedido.notas = null;
+          pedido.historial = pedido.historial.map(({ estado, fecha }) => ({ estado, fecha }));
+        }
+        for (const resena of db.resenas.filter((r) => r.usuarioId === usuario.id)) {
+          resena.usuarioNombre = "Cliente";
+        }
+      }
+      return "ok";
     });
   },
 

@@ -109,52 +109,7 @@ function crearSemilla(): DBLocal {
     favoritos: {},
     direcciones: [],
     pedidos: [],
-    resenas: [
-      {
-        id: "res-001",
-        productoId: "prod-005",
-        usuarioId: "usr-demo-001",
-        usuarioNombre: "María G.",
-        calificacion: 5,
-        titulo: "Mi ramen de siempre",
-        comentario:
-          "Llegó en perfecto estado y el sabor es idéntico al que probé en Seúl. Volveré a pedir.",
-        creadaEn: "2026-09-10T15:30:00.000Z",
-      },
-      {
-        id: "res-002",
-        productoId: "prod-001",
-        usuarioId: "usr-demo-002",
-        usuarioNombre: "Diego R.",
-        calificacion: 5,
-        titulo: "Picante perfecto",
-        comentario:
-          "El original tiene el punto justo: pica pero no tapa el sabor. Súper recomendado con un huevo encima.",
-        creadaEn: "2026-09-18T19:05:00.000Z",
-      },
-      {
-        id: "res-003",
-        productoId: "prod-014",
-        usuarioId: "usr-demo-003",
-        usuarioNombre: "Lucía M.",
-        calificacion: 5,
-        titulo: "Regalo perfecto",
-        comentario:
-          "El matcha se siente real, no artificial. Lo compré para una amiga y quedó encantada.",
-        creadaEn: "2026-10-02T12:00:00.000Z",
-      },
-      {
-        id: "res-004",
-        productoId: "prod-019",
-        usuarioId: "usr-demo-004",
-        usuarioNombre: "Andrés P.",
-        calificacion: 4,
-        titulo: "Nostalgia en botella",
-        comentario:
-          "La canica es todo un ritual. Llegó fría y bien embotellada. Le quito una estrella porque quisiera más sabores.",
-        creadaEn: "2026-10-11T17:45:00.000Z",
-      },
-    ],
+    resenas: [],
     cupones: CUPONES_SEED,
     usosCupon: [],
     movimientos: [],

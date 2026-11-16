@@ -9,6 +9,7 @@ import { formatPEN, formatFecha } from "@/lib/utils/format";
 import { siteConfig } from "@/lib/config/site";
 import { EstadoPedidoBadges } from "@/components/tienda/estado-pedido";
 import { LimpiarCarrito } from "@/components/tienda/limpiar-carrito";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
 import type { EstadoPedido } from "@/types";
 
 interface Props {
@@ -201,7 +202,7 @@ export default async function PaginaConfirmacion({ params }: Props) {
             {pedido.items.map((i) => (
               <li key={i.productoId} className="flex items-center gap-3">
                 <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-crema">
-                  <Image src={i.imagen} alt={i.nombre} fill sizes="48px" className="object-cover" />
+                  <ImagenProducto src={i.imagen || "/logo.png"} alt={i.nombre} fill sizes="48px" className="object-cover" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <Link href={`/producto/${i.slug}`} className="line-clamp-1 text-sm font-medium text-marron hover:text-tomate">

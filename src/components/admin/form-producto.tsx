@@ -1,12 +1,17 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import { Save, LoaderCircle, ArrowLeft, Sparkles } from "lucide-react";
+import { Save, LoaderCircle, ArrowLeft, Sparkles, Upload } from "lucide-react";
 import { guardarProducto } from "@/server/actions/admin/productos";
 import { toast } from "@/components/ui/toaster";
+import { ImagenProducto } from "@/components/ui/imagen-producto";
+import {
+  extensionImagen,
+  MAX_TAMANO_IMAGEN,
+  MIME_IMAGENES_PERMITIDOS,
+} from "@/lib/utils/validar-imagen";
 import type { Categoria, Marca, Producto, ResultadoAccion } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -35,7 +40,11 @@ export function FormProducto({ producto, categorias, marcas }: Props) {
   const [nombre, setNombre] = useState(producto?.nombre ?? "");
   const [slug, setSlug] = useState(producto?.slug ?? "");
   const [slugTocado, setSlugTocado] = useState(!!producto);
-  const [imagen, setImagen] = useState(producto?.imagenes[0] ?? "");
+  const [imagenes, setImagenes] = useState(producto?.imagenes.join("\n") ?? "");
+  const [imagenesFallidas, setImagenesFallidas] = useState<Set<string>>(() => new Set());
+  const [subiendoImagenes, setSubiendoImagenes] = useState(false);
+  const [arrastrandoImagenes, setArrastrandoImagenes] = useState(false);
+  const inputImagenesRef = useRef<HTMLInputElement>(null);
   const [precioAnterior, setPrecioAnterior] = useState(
     producto?.precioAnterior != null ? String(producto.precioAnterior) : ""
   );
@@ -50,6 +59,79 @@ export function FormProducto({ producto, categorias, marcas }: Props) {
 
   const errorDe = (campo: string) => (estado.campo === campo ? estado.error : undefined);
   const listas = (v: string[] | null | undefined) => (v ?? []).join(", ");
+  const cantidadImagenes = imagenes.split(/\r?\n/).map((src) => src.trim()).filter(Boolean).length;
+
+  const subirImagenes = async (archivos: File[]) => {
+    if (subiendoImagenes || archivos.length === 0) return;
+    if (cantidadImagenes + archivos.length > 12) {
+      toast.error("Cada producto admite hasta 12 imágenes.");
+      return;
+    }
+
+    const archivoInvalido = archivos.find(
+      (archivo) =>
+        !extensionImagen(archivo.type) ||
+        archivo.size === 0 ||
+        archivo.size > MAX_TAMANO_IMAGEN
+    );
+    if (archivoInvalido) {
+      toast.error("Usa archivos JPG, PNG o WebP de hasta 4 MB cada uno.");
+      return;
+    }
+
+    setSubiendoImagenes(true);
+    try {
+      for (const archivo of archivos) {
+        const datos = new FormData();
+        datos.append("archivo", archivo);
+        const respuesta = await fetch("/api/admin/productos/imagenes", {
+          method: "POST",
+          body: datos,
+        });
+
+        let resultado: unknown;
+        try {
+          resultado = await respuesta.json();
+        } catch {
+          throw new Error("El servidor devolvió una respuesta inválida.");
+        }
+
+        if (!respuesta.ok) {
+          const mensaje =
+            typeof resultado === "object" &&
+            resultado !== null &&
+            "error" in resultado &&
+            typeof resultado.error === "string"
+              ? resultado.error
+              : "No se pudo subir la imagen.";
+          throw new Error(mensaje);
+        }
+
+        if (
+          typeof resultado !== "object" ||
+          resultado === null ||
+          !("url" in resultado) ||
+          typeof resultado.url !== "string"
+        ) {
+          throw new Error("El servidor no devolvió la URL de la imagen.");
+        }
+
+        const url = resultado.url;
+        setImagenes((actuales) => {
+          const lista = actuales.split(/\r?\n/).map((src) => src.trim()).filter(Boolean);
+          return lista.includes(url) ? actuales : [...lista, url].join("\n");
+        });
+        setImagenesFallidas(new Set());
+      }
+
+      toast.success(archivos.length === 1 ? "Imagen subida." : "Imágenes subidas.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo completar la subida.");
+    } finally {
+      setSubiendoImagenes(false);
+      if (inputImagenesRef.current) inputImagenesRef.current.value = "";
+    }
+  };
 
   const precioActual = producto?.precio ?? 0;
   const previewPrecio = Number(precioAnterior);
@@ -375,41 +457,121 @@ export function FormProducto({ producto, categorias, marcas }: Props) {
 
         {/* Imagen */}
         <section className="rounded-card border border-beige-dark/60 bg-white p-5">
-          <h2 className="font-display text-lg font-bold text-marron">Imagen</h2>
+          <h2 className="font-display text-lg font-bold text-marron">Imágenes</h2>
           <div className="mt-4">
-            <span className="relative mx-auto flex h-32 w-32 items-center justify-center overflow-hidden rounded-2xl border border-beige-dark/60 bg-crema">
-              <Image
-                src={imagen || "/logo.png"}
-                alt="Vista previa"
-                fill
-                sizes="128px"
-                className="object-contain p-2"
+            <div
+              onDragOver={(evento) => {
+                evento.preventDefault();
+                setArrastrandoImagenes(true);
+              }}
+              onDragLeave={() => setArrastrandoImagenes(false)}
+              onDrop={(evento) => {
+                evento.preventDefault();
+                setArrastrandoImagenes(false);
+                void subirImagenes(Array.from(evento.dataTransfer.files));
+              }}
+              className={cn(
+                "rounded-xl border-2 border-dashed p-4 text-center transition-colors",
+                arrastrandoImagenes
+                  ? "border-tomate bg-tomate/5"
+                  : "border-beige-dark/70 bg-crema/40"
+              )}
+            >
+              <input
+                ref={inputImagenesRef}
+                type="file"
+                accept={MIME_IMAGENES_PERMITIDOS.join(",")}
+                multiple
+                aria-label="Seleccionar imágenes de producto"
+                className="sr-only"
+                disabled={subiendoImagenes}
+                onChange={(evento) => void subirImagenes(Array.from(evento.target.files ?? []))}
               />
-            </span>
-            <input
-              id="imagen"
-              name="imagen"
-              maxLength={300}
-              value={imagen}
-              onChange={(e) => setImagen(e.target.value)}
-              placeholder="/productos/ramen-tonkotsu.svg"
-              className="campo mt-3 text-xs"
+              <Upload className="mx-auto h-5 w-5 text-tomate" aria-hidden />
+              <p className="mt-2 text-sm font-semibold text-marron">
+                Arrastra imágenes aquí o selecciónalas
+              </p>
+              <button
+                type="button"
+                disabled={subiendoImagenes || cantidadImagenes >= 12}
+                onClick={() => inputImagenesRef.current?.click()}
+                className="mt-3 rounded-full border border-tomate/30 px-4 py-2 text-xs font-bold text-tomate transition-colors hover:bg-tomate/5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {subiendoImagenes ? "Subiendo imágenes…" : "Seleccionar archivos"}
+              </button>
+              <p className="mt-2 text-[11px] text-marron/50">
+                JPG, PNG o WebP; máximo 4 MB por imagen. {cantidadImagenes}/12 imágenes.
+              </p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {(imagenes.split(/\r?\n/).map((src) => src.trim()).filter(Boolean).slice(0, 4))
+                .map((src, indice) => (
+                  <span
+                    key={`${src}-${indice}`}
+                    className="relative aspect-square overflow-hidden rounded-xl border border-beige-dark/60 bg-white"
+                  >
+                    {imagenesFallidas.has(src) ? (
+                      <span className="absolute inset-0 grid place-items-center p-1 text-center text-[10px] leading-tight text-tomate">
+                        No se cargó. Usa el enlace directo de la imagen.
+                      </span>
+                    ) : (
+                      <ImagenProducto
+                        src={src}
+                        alt=""
+                        fill
+                        sizes="72px"
+                        className="object-contain p-1"
+                        onError={() =>
+                          setImagenesFallidas((actuales) => new Set(actuales).add(src))
+                        }
+                      />
+                    )}
+                  </span>
+                ))}
+            </div>
+            <label htmlFor="imagenes" className="etiqueta mt-4 block">
+              Una ruta por línea (de 4 a 12 imágenes distintas)
+            </label>
+            <textarea
+              id="imagenes"
+              name="imagenes"
+              required
+              maxLength={2400}
+              rows={5}
+              value={imagenes}
+              onChange={(e) => {
+                setImagenes(e.target.value);
+                setImagenesFallidas(new Set());
+              }}
+              placeholder={"https://tu-dominio.com/producto-frente.jpg\nhttps://tu-dominio.com/producto-detalle.jpg\nhttps://tu-dominio.com/producto-empaque.jpg\nhttps://tu-dominio.com/producto-extra.jpg"}
+              className="campo mt-2 text-xs"
             />
+            {errorDe("imagenes") && (
+              <p className="mt-1.5 text-xs font-medium text-tomate" role="alert">
+                {estado.error}
+              </p>
+            )}
             <p className="mt-1.5 text-[11px] text-marron/50">
-              Ruta pública (p. ej. /productos/xxx.svg). Vacío usa el logo.
+              Pega una ruta local o la URL directa del archivo de imagen, no la página del producto.
             </p>
           </div>
         </section>
 
         {/* Acciones */}
         <div className="flex flex-col gap-2">
-          <button type="submit" disabled={pendiente} className="btn-primary w-full py-3">
-            {pendiente ? (
+          <button type="submit" disabled={pendiente || subiendoImagenes} className="btn-primary w-full py-3">
+            {pendiente || subiendoImagenes ? (
               <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
             ) : (
               <Save className="h-4 w-4" aria-hidden />
             )}
-            {pendiente ? "Guardando…" : producto ? "Guardar cambios" : "Crear producto"}
+            {subiendoImagenes
+              ? "Subiendo imágenes…"
+              : pendiente
+                ? "Guardando…"
+                : producto
+                  ? "Guardar cambios"
+                  : "Crear producto"}
           </button>
           <Link href="/admin/productos" className="btn-outline w-full py-3 text-center">
             <ArrowLeft className="mr-1 inline h-4 w-4" aria-hidden /> Volver

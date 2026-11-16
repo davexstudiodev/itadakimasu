@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Search, Users } from "lucide-react";
 import { getProvider } from "@/lib/data";
 import { getUsuarioActual } from "@/lib/auth";
-import { FilaUsuario } from "@/components/admin/fila-usuario";
+import { TablaUsuarios } from "@/components/admin/tabla-usuarios";
 import { EstadoVacio } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = { title: "Usuarios" };
@@ -66,20 +66,7 @@ export default async function PaginaUsuarios({ searchParams }: Props) {
           accion={q ? { texto: "Ver todos", href: "/admin/usuarios" } : undefined}
         />
       ) : (
-        <div className="overflow-hidden rounded-card border border-beige-dark/60 bg-white shadow-card">
-          <div className="hidden gap-4 border-b border-beige-dark/60 bg-crema/70 px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-marron/60 lg:grid lg:grid-cols-[1fr_170px_140px_140px_180px]">
-            <span>Cliente</span>
-            <span>Teléfono</span>
-            <span>Rol</span>
-            <span>Estado</span>
-            <span className="text-right">Acciones</span>
-          </div>
-          <ul className="divide-y divide-beige-dark/60">
-            {usuarios.map((u) => (
-              <FilaUsuario key={u.id} usuario={u} esYo={u.id === yo?.id} />
-            ))}
-          </ul>
-        </div>
+        <TablaUsuarios key={usuarios.map((usuario) => usuario.id).join("|")} usuarios={usuarios} miId={yo?.id ?? ""} />
       )}
     </div>
   );

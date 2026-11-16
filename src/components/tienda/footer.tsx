@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle, Mail, Phone, MapPin, Clock } from "lucide-react";
+import { MessageCircle, Phone, MapPin, Clock } from "lucide-react";
 import { Instagram, Facebook, TikTok } from "@/components/ui/brand-icons";
 import { siteConfig } from "@/lib/config/site";
 
@@ -112,12 +112,6 @@ export function Footer({ categorias }: Props) {
               <Phone className="mt-0.5 h-4 w-4 shrink-0 text-tomate" aria-hidden />
               <a href={`tel:${siteConfig.telefono.replace(/\s/g, "")}`} className="hover:text-tomate">
                 {siteConfig.telefono}
-              </a>
-            </li>
-            <li className="flex gap-2.5">
-              <Mail className="mt-0.5 h-4 w-4 shrink-0 text-tomate" aria-hidden />
-              <a href={`mailto:${siteConfig.email}`} className="hover:text-tomate">
-                {siteConfig.email}
               </a>
             </li>
             <li className="flex gap-2.5">
