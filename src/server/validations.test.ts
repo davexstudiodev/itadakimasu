@@ -237,8 +237,9 @@ describe("esquemaProducto", () => {
     expect(esquemaProducto.safeParse({ ...base, descripcion: "corta" }).success).toBe(false);
   });
 
-  it("rechaza galerías con menos de cuatro imágenes o rutas repetidas", () => {
-    expect(esquemaProducto.safeParse({ ...base, imagenes: "/productos/ramen.svg" }).success).toBe(false);
+  it("acepta una imagen y rechaza galerías vacías o rutas repetidas", () => {
+    expect(esquemaProducto.safeParse({ ...base, imagenes: "/productos/ramen.svg" }).success).toBe(true);
+    expect(esquemaProducto.safeParse({ ...base, imagenes: "" }).success).toBe(false);
     expect(
       esquemaProducto.safeParse({
         ...base,

@@ -213,7 +213,7 @@ export const esquemaProducto = z.object({
       .map((imagen) => imagen.trim())
       .filter(Boolean);
     return (
-      imagenes.length >= 4 &&
+      imagenes.length >= 1 &&
       imagenes.length <= 12 &&
       imagenes.every((imagen) => imagen.length <= 300) &&
       new Set(imagenes).size === imagenes.length
@@ -221,7 +221,7 @@ export const esquemaProducto = z.object({
   },
   {
     path: ["imagenes"],
-    message: "Agrega entre 4 y 12 imágenes distintas (máximo 300 caracteres cada una)",
+    message: "Agrega entre 1 y 12 imágenes distintas (máximo 300 caracteres cada una)",
   }
 );
 
