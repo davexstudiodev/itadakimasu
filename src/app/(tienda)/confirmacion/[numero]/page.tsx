@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CircleCheck, Package, Truck, MapPin, Wallet, Receipt } from "lucide-react";
 import { getProvider } from "@/lib/data";
@@ -10,6 +9,7 @@ import { siteConfig } from "@/lib/config/site";
 import { EstadoPedidoBadges } from "@/components/tienda/estado-pedido";
 import { LimpiarCarrito } from "@/components/tienda/limpiar-carrito";
 import { ImagenProducto } from "@/components/ui/imagen-producto";
+import { PagoYapeQR } from "@/components/tienda/pago-yape-qr";
 import type { EstadoPedido } from "@/types";
 
 interface Props {
@@ -90,36 +90,15 @@ export default async function PaginaConfirmacion({ params }: Props) {
           </p>
 
           {pedido.metodoPago === "yape" ? (
-            <div className="mt-3 grid gap-4 sm:grid-cols-[150px_1fr] sm:items-center">
-              <span className="mx-auto block w-full max-w-[150px] overflow-hidden rounded-xl border border-[#780699]/20 bg-white shadow-card sm:mx-0">
-                <Image
-                  src="/pagos/yape-qr.jpg"
-                  alt="QR de Yape — Elias Josue David Casusol Leyva"
-                  width={1131}
-                  height={1599}
-                  className="h-auto w-full"
-                />
-              </span>
-              <div className="min-w-0">
-                <p>
-                  Escanea el QR con tu app Yape y transfiere{" "}
-                  <strong>{formatPEN(pedido.total)}</strong> (monto exacto).
-                </p>
-                <p className="mt-2">
-                  Luego envía la captura del comprobante por{" "}
-                  <a
-                    href={siteConfig.redes.whatsapp}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-tomate underline"
-                  >
-                    WhatsApp
-                  </a>{" "}
-                  indicando tu número de pedido. A nombre de{" "}
-                  <strong>Elias Josue David Casusol Leyva</strong>. Tu pedido pasa a «pago confirmado»
-                  en cuanto lo verifiquemos (normalmente en minutos).
-                </p>
-              </div>
+            <div className="mt-3">
+              <p>
+                Escanea el QR que se abrió y transfiere exactamente <strong>{formatPEN(pedido.total)}</strong>.
+                La cuenta está a nombre de <strong>Elias Josue David Casusol Leyva</strong>.
+              </p>
+              <p className="mt-2">
+                Tu pedido pasará a «pago confirmado» después de que verifiquemos el comprobante.
+              </p>
+              <PagoYapeQR numeroPedido={pedido.numero} total={pedido.total} />
             </div>
           ) : (
             <p className="mt-2">

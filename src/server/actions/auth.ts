@@ -217,9 +217,7 @@ export async function iniciarSesion(
       return error("", "Esta cuenta está desactivada. Contacta con soporte.");
     }
 
-    const destino = String(formData.get("next") ?? "");
-    if (destino.startsWith("/") && !destino.startsWith("//")) redirect(destino);
-    return { ok: true };
+    redirect("/");
   }
 
   /* ---- Modo local ---- */
@@ -241,9 +239,7 @@ export async function iniciarSesion(
     detalle: "Inicio de sesión",
   });
 
-  const destino = String(formData.get("next") ?? "");
-  if (destino.startsWith("/") && !destino.startsWith("//")) redirect(destino);
-  return { ok: true };
+  redirect("/");
 }
 
 /* ---------------- Cierre de sesión ---------------- */

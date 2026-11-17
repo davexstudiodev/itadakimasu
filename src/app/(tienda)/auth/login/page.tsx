@@ -13,7 +13,6 @@ interface Props {
 
 export default async function PaginaLogin({ searchParams }: Props) {
   const sp = await searchParams;
-  const next = typeof sp.next === "string" ? sp.next : undefined;
   const email = typeof sp.email === "string" ? sp.email : undefined;
 
   return (
@@ -22,7 +21,7 @@ export default async function PaginaLogin({ searchParams }: Props) {
       subtitulo="Inicia sesión para continuar con tu pedido."
       textoJp="おかえりなさい"
     >
-      <FormLogin next={next} emailSugerido={email} />
+      <FormLogin emailSugerido={email} />
     </CardAuth>
   );
 }

@@ -10,18 +10,17 @@ import { cn } from "@/lib/utils/cn";
 
 const ESTADO_INICIAL: ResultadoAccion = { ok: false };
 
-export function FormLogin({ next, emailSugerido }: { next?: string; emailSugerido?: string }) {
+export function FormLogin({ emailSugerido }: { emailSugerido?: string }) {
   const [estado, action, pendiente] = useActionState(iniciarSesion, ESTADO_INICIAL);
   const [verPassword, setVerPassword] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (estado.ok) {
-      const destino = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
-      router.push(destino);
+      router.push("/");
       router.refresh();
     }
-  }, [estado, next, router]);
+  }, [estado, router]);
 
   const errorDe = (campo: string) => (estado.campo === campo ? estado.error : undefined);
 
@@ -32,8 +31,6 @@ export function FormLogin({ next, emailSugerido }: { next?: string; emailSugerid
           {estado.error}
         </p>
       )}
-
-      {next && <input type="hidden" name="next" value={next} />}
 
       <div>
         <label htmlFor="email" className="etiqueta">Correo electrónico</label>

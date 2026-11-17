@@ -2,7 +2,6 @@
 
 import { useEffect, useActionState, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Truck,
   Store,
@@ -10,14 +9,12 @@ import {
   ShieldCheck,
   LoaderCircle,
   ShoppingBag,
-  MessageCircle,
 } from "lucide-react";
 import { useCarrito, subtotalDe } from "@/store/carrito";
 import { crearPedido, calcularTotales, type TotalesPreview } from "@/server/actions/pedidos";
 import { toast } from "@/components/ui/toaster";
 import { EstadoVacio } from "@/components/ui/empty-state";
 import { formatPEN } from "@/lib/utils/format";
-import { siteConfig } from "@/lib/config/site";
 import { DEPARTAMENTOS } from "@/server/validations";
 import type { ConfiguracionTienda, Direccion, MetodoEnvio, ResultadoAccion } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -342,66 +339,12 @@ export function CheckoutCliente({ direcciones, cfg, usuario }: Props) {
             </span>
           </div>
 
-          <div className="mt-4 grid gap-5 sm:grid-cols-[220px_1fr]">
-            {/* QR de Yape */}
-            <div className="mx-auto w-full max-w-[220px]">
-              <div className="overflow-hidden rounded-2xl border border-[#780699]/20 bg-white shadow-card">
-                <Image
-                  src="/pagos/yape-qr.jpg"
-                  alt="QR de Yape — Elias Josue David Casusol Leyva"
-                  width={1131}
-                  height={1599}
-                  className="h-auto w-full"
-                  priority
-                />
-              </div>
-              <p className="mt-2 text-center text-[11px] font-medium text-marron/55">
-                Toca la imagen para ampliarla
-              </p>
-            </div>
-
-            {/* Instrucciones */}
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-marron">
-                Escanea el QR con tu app Yape y transfiere{" "}
-                <span className="text-[#780699]">{formatPEN(total)}</span>
-              </p>
-
-              <ol className="mt-3 space-y-2.5">
-                {[
-                  "Abre tu app Yape y toca «Escanear».",
-                  `Transfiere exactamente ${formatPEN(total)} (no se redondea).`,
-                  "Envía la captura del comprobante por WhatsApp con tu número de pedido.",
-                ].map((paso, i) => (
-                  <li key={i} className="flex gap-3 text-sm leading-relaxed text-marron/80">
-                    <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#780699] text-[11px] font-black text-white">
-                      {i + 1}
-                    </span>
-                    <span>{paso}</span>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="mt-4 rounded-xl border border-naranja/30 bg-naranja/10 p-4 text-xs leading-relaxed text-marron/80">
-                <p className="mb-1 font-bold uppercase tracking-wide text-naranja-dark">
-                  Pago manual — se confirma en minutos
-                </p>
-                <p>
-                  Tu pedido quedará en «pago pendiente» hasta que confirmemos el comprobante.
-                  A nombre de <strong>Elias Josue David Casusol Leyva</strong>.
-                </p>
-              </div>
-
-              <a
-                href={siteConfig.redes.whatsapp}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary mt-4 w-full py-3"
-              >
-                <MessageCircle className="h-4 w-4" aria-hidden />
-                Enviar comprobante por WhatsApp
-              </a>
-            </div>
+          <div className="mt-4 rounded-xl border border-[#780699]/15 bg-[#780699]/5 p-4 text-sm leading-relaxed text-marron/80">
+            <p className="font-bold text-[#780699]">Paga después de confirmar tu pedido</p>
+            <p className="mt-1">
+              Al continuar, guardaremos tu pedido y te mostraremos el QR de Yape a pantalla completa junto con el botón para enviar tu comprobante.
+              El total a transferir es <strong>{formatPEN(total)}</strong>.
+            </p>
           </div>
 
           <input type="hidden" name="metodoPago" value="yape" />
@@ -498,7 +441,7 @@ export function CheckoutCliente({ direcciones, cfg, usuario }: Props) {
 
         <button type="submit" disabled={pendiente} className="btn-primary mt-5 w-full py-3.5 text-base">
           {pendiente ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : <ShieldCheck className="h-5 w-5" aria-hidden />}
-          {pendiente ? "Procesando…" : "Confirmar pedido"}
+          {pendiente ? "Procesando…" : "Continuar al pago con Yape"}
         </button>
 
         <p className="mt-3 text-center text-[11px] leading-relaxed text-marron/55">
