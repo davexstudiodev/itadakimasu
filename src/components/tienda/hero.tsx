@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 
-export function Hero() {
+export function Hero({ cantidadProductos }: { cantidadProductos: number }) {
   return (
     <section className="relative overflow-hidden bg-crema patron-olas">
       {/* Círculo decorativo */}
@@ -58,12 +58,12 @@ export function Hero() {
           <dl className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-center text-sm lg:justify-start">
             <div>
               <dt className="text-marron/55">Productos</dt>
-              <dd className="font-black text-marron">+28 originales</dd>
+              <dd className="font-black text-marron">{cantidadProductos} originales</dd>
             </div>
             <span aria-hidden className="hidden h-8 w-px bg-beige-dark sm:block" />
             <div>
               <dt className="text-marron/55">Clientes felices</dt>
-              <dd className="font-black text-marron">+2.500 pedidos</dd>
+              <dd className="font-black text-marron">50</dd>
             </div>
             <span aria-hidden className="hidden h-8 w-px bg-beige-dark sm:block" />
             <div>

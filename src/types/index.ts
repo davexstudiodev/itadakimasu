@@ -205,6 +205,7 @@ export interface ConfiguracionTienda {
   envioGratisDesde: number;
   recojoGratuito: boolean;
   autollenarUbicacionCheckout: boolean;
+  cuponInicioId: string;
   metodosPago: { yape: boolean; plin: boolean; transferencia: boolean; contraEntrega: boolean; pasarela: boolean };
   mensajeBoasvindas: string;
 }

@@ -124,6 +124,7 @@ export const CONFIG_SEED: ConfiguracionTienda = {
   envioGratisDesde: 0,
   recojoGratuito: true,
   autollenarUbicacionCheckout: true,
+  cuponInicioId: "",
   metodosPago: {
     yape: true,
     plin: false,

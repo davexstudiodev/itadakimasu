@@ -5,7 +5,8 @@ import { FormConfiguracion } from "@/components/admin/form-configuracion";
 export const metadata: Metadata = { title: "Configuración" };
 
 export default async function PaginaConfiguracion() {
-  const cfg = await getProvider().getConfiguracion();
+  const provider = getProvider();
+  const [cfg, cupones] = await Promise.all([provider.getConfiguracion(), provider.getCupones()]);
 
   return (
     <div className="space-y-5">
@@ -18,7 +19,7 @@ export default async function PaginaConfiguracion() {
           Datos de contacto, envíos, medios de pago y mensajes de la tienda.
         </p>
       </div>
-      <FormConfiguracion cfg={cfg} />
+      <FormConfiguracion cfg={cfg} cupones={cupones} />
     </div>
   );
 }

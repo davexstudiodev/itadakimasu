@@ -283,6 +283,7 @@ export const esquemaConfiguracion = z.object({
   envioGratisDesde: z.number().min(0).max(9999),
   recojoGratuito: z.boolean(),
   autollenarUbicacionCheckout: z.boolean(),
+  cuponInicioId: z.string().max(120),
   mensajeBoasvindas: z.string().max(200),
   pagoYape: z.boolean(),
   pagoPlin: z.boolean(),

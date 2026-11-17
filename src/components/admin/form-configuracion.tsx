@@ -4,12 +4,12 @@ import { useActionState, useEffect } from "react";
 import { Save, LoaderCircle, Truck, Wallet, Store, Share2 } from "lucide-react";
 import { guardarConfiguracion } from "@/server/actions/admin/configuracion";
 import { toast } from "@/components/ui/toaster";
-import type { ConfiguracionTienda, ResultadoAccion } from "@/types";
+import type { ConfiguracionTienda, Cupon, ResultadoAccion } from "@/types";
 import { cn } from "@/lib/utils/cn";
 
 const ESTADO_INICIAL: ResultadoAccion = { ok: false };
 
-export function FormConfiguracion({ cfg }: { cfg: ConfiguracionTienda }) {
+export function FormConfiguracion({ cfg, cupones }: { cfg: ConfiguracionTienda; cupones: Cupon[] }) {
   const [estado, action, pendiente] = useActionState(guardarConfiguracion, ESTADO_INICIAL);
 
   // Solo toast (sin setState): la página se refresca con router del servidor
@@ -84,6 +84,25 @@ export function FormConfiguracion({ cfg }: { cfg: ConfiguracionTienda }) {
               {errorDe("mensajeBoasvindas") && (
                 <p className="mt-1.5 text-xs font-medium text-tomate">{estado.error}</p>
               )}
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="cuponInicioId" className="etiqueta">Cupón destacado en el inicio</label>
+              <select
+                id="cuponInicioId"
+                name="cuponInicioId"
+                defaultValue={cfg.cuponInicioId ?? ""}
+                className="campo"
+              >
+                <option value="">Sin cupón: mostrar aviso de novedades</option>
+                {cupones.map((cupon) => (
+                  <option key={cupon.id} value={cupon.id}>
+                    {cupon.codigo} · {cupon.activo ? "activo" : "desactivado"}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-xs leading-relaxed text-marron/60">
+                Solo se mostrará mientras el cupón esté activo y vigente. Al desactivarlo, el inicio cambia automáticamente al aviso informativo.
+              </p>
             </div>
           </div>
         </section>

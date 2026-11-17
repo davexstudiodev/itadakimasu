@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const provider = getProvider();
-  const [categorias, destacados, vendidos, nuevos, ofertas, coreanos, japoneses] =
+  const [categorias, destacados, vendidos, nuevos, ofertas, coreanos, japoneses, catalogo, cfg, cupones] =
     await Promise.all([
       provider.getCategorias(),
       provider.getProductosDestacados(8),
@@ -23,11 +23,24 @@ export default async function HomePage() {
       provider.listarProductos({ soloOfertas: true, orden: "vendidos", porPagina: 4 }),
       provider.listarProductos({ pais: "corea", orden: "vendidos", porPagina: 4 }),
       provider.listarProductos({ pais: "japon", orden: "vendidos", porPagina: 4 }),
+      provider.listarProductos({ porPagina: 1 }),
+      provider.getConfiguracion(),
+      provider.getCupones(),
     ]);
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  const cuponInicio = cupones.find(
+    (cupon) =>
+      cupon.id === cfg.cuponInicioId &&
+      cupon.activo &&
+      (!cupon.fechaInicio || cupon.fechaInicio <= hoy) &&
+      (!cupon.fechaFin || cupon.fechaFin >= hoy) &&
+      (cupon.usosMaximos == null || cupon.usosActuales < cupon.usosMaximos)
+  );
 
   return (
     <>
-      <Hero />
+      <Hero cantidadProductos={catalogo.total} />
       <TrustStrip />
 
       {/* Categorias */}
@@ -58,11 +71,42 @@ export default async function HomePage() {
 
       {/* Promocion */}
       <div className="py-10 sm:py-14">
-        <PromoBanner
-          codigo="BIENVENIDO10"
-          titulo="10% OFF en tu primer pedido"
-          texto="Aplica en compras desde S/ 30. Usalo en el checkout antes de confirmar tu pedido."
-        />
+        {cuponInicio ? (
+          <PromoBanner
+            codigo={cuponInicio.codigo}
+            titulo={
+              cuponInicio.tipo === "porcentaje"
+                ? `${cuponInicio.valor}% de descuento`
+                : `S/ ${cuponInicio.valor} de descuento`
+            }
+            texto={
+              [
+                cuponInicio.descripcion || "Ingresa el código en el checkout para aplicar el descuento.",
+                cuponInicio.compraMinima != null
+                  ? `Válido en compras desde S/ ${cuponInicio.compraMinima.toFixed(2)}.`
+                  : null,
+                cuponInicio.fechaFin ? `Válido hasta ${cuponInicio.fechaFin}.` : null,
+              ]
+                .filter(Boolean)
+                .join(" ")
+            }
+          />
+        ) : (
+          <section className="contenedor">
+            <div className="rounded-card border border-beige-dark/60 bg-white px-6 py-8 shadow-card sm:px-10 sm:py-10">
+              <p className="text-xs font-bold uppercase tracking-wider text-tomate">Para descubrir</p>
+              <h2 className="texto-marca mt-2 text-2xl font-black text-marron sm:text-3xl">
+                Novedades con sabor a Asia
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-marron/70 sm:text-base">
+                Explora ramen, dulces y bebidas de Japón y Corea. Revisa los precios y condiciones de envío antes de confirmar tu compra.
+              </p>
+              <Link href="/productos" className="btn-primary mt-5 px-6 py-2.5">
+                Explorar catálogo
+              </Link>
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Mas vendidos */}
