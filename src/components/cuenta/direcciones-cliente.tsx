@@ -52,14 +52,14 @@ export function DireccionesCliente({ direcciones }: { direcciones: Direccion[] }
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-marron/60">
           {direcciones.length} dirección{direcciones.length === 1 ? "" : "es"} guardada{direcciones.length === 1 ? "" : "s"}
         </p>
         <button
           type="button"
           onClick={() => { setEditando(null); setAbierto(true); }}
-          className="btn-primary px-5 py-2.5"
+          className="btn-primary w-full px-5 py-2.5 sm:w-auto"
         >
           <Plus className="h-4 w-4" aria-hidden /> Nueva dirección
         </button>
@@ -76,31 +76,31 @@ export function DireccionesCliente({ direcciones }: { direcciones: Direccion[] }
       ) : (
         <ul className="space-y-3">
           {direcciones.map((d) => (
-            <li key={d.id} className="rounded-card border border-beige-dark/60 bg-white p-4">
+            <li key={d.id} className="rounded-card border border-beige-dark/60 bg-white p-3 sm:p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-marron">
-                    {d.nombreCompleto}
+                    <span className="break-words">{d.nombreCompleto}</span>
                     {d.porDefecto && (
                       <span className="rounded-full bg-tomate px-2 py-0.5 text-[10px] font-bold uppercase text-crema">
                         Por defecto
                       </span>
                     )}
                   </p>
-                  <p className="mt-1 text-sm text-marron/70">
+                  <p className="mt-1 break-words text-sm text-marron/70">
                     {d.direccion}, {d.distrito}
                   </p>
-                  <p className="text-sm text-marron/60">
+                  <p className="break-words text-sm text-marron/60">
                     {d.provincia}, {d.departamento} · {d.telefono}
                   </p>
                   {d.referencia && <p className="mt-1 text-xs text-marron/50">Ref.: {d.referencia}</p>}
                 </div>
 
-                <div className="flex shrink-0 gap-2">
+                <div className="flex w-full shrink-0 gap-2 sm:w-auto">
                   <button
                     type="button"
                     onClick={() => { setEditando(d); setAbierto(true); }}
-                    className="btn-outline px-4 py-2 text-xs"
+                    className="btn-outline flex-1 px-3 py-2 text-xs sm:flex-none sm:px-4"
                   >
                     <Pencil className="h-3.5 w-3.5" aria-hidden /> Editar
                   </button>
@@ -112,7 +112,7 @@ export function DireccionesCliente({ direcciones }: { direcciones: Direccion[] }
                   >
                     <button
                       type="button"
-                      className="flex items-center gap-1.5 rounded-full border border-tomate/25 px-4 py-2 text-xs font-semibold text-tomate transition-colors hover:bg-tomate/10"
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-tomate/25 px-3 py-2 text-xs font-semibold text-tomate transition-colors hover:bg-tomate/10 sm:flex-none sm:px-4"
                     >
                       <Trash className="h-3.5 w-3.5" aria-hidden /> Eliminar
                     </button>
@@ -234,11 +234,11 @@ export function DireccionesCliente({ direcciones }: { direcciones: Direccion[] }
             <button
               type="button"
               onClick={() => { setAbierto(false); setEditando(null); }}
-              className="btn-outline px-5 py-2.5"
+              className="btn-outline w-full px-5 py-2.5 sm:w-auto"
             >
               Cancelar
             </button>
-            <button type="submit" disabled={pendiente} className="btn-primary px-6 py-2.5">
+            <button type="submit" disabled={pendiente} className="btn-primary w-full px-6 py-2.5 sm:w-auto">
               {pendiente ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
               Guardar dirección
             </button>

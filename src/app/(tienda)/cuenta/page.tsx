@@ -29,7 +29,7 @@ export default async function PaginaCuenta() {
           <Link
             key={href}
             href={href}
-            className="group rounded-card border border-beige-dark/60 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-tomate/40 hover:shadow-card"
+            className="group rounded-card border border-beige-dark/60 bg-white p-3 transition-all hover:-translate-y-0.5 hover:border-tomate/40 hover:shadow-card sm:p-4"
           >
             <Icono className="h-5 w-5 text-tomate" aria-hidden />
             <p className="mt-2 flex items-center gap-1 text-sm font-bold text-marron">
@@ -42,7 +42,7 @@ export default async function PaginaCuenta() {
       </div>
 
       {/* Datos */}
-      <section className="rounded-card border border-beige-dark/60 bg-white p-5 sm:p-6">
+      <section className="rounded-card border border-beige-dark/60 bg-white p-4 sm:p-6">
         <h2 className="font-display text-lg font-bold text-marron">Mis datos</h2>
         <div className="mt-4">
           <FormPerfil perfil={usuario} />
@@ -50,7 +50,7 @@ export default async function PaginaCuenta() {
       </section>
 
       {/* Contraseña */}
-      <section className="rounded-card border border-beige-dark/60 bg-white p-5 sm:p-6">
+      <section className="rounded-card border border-beige-dark/60 bg-white p-4 sm:p-6">
         <h2 className="font-display text-lg font-bold text-marron">Cambiar contraseña</h2>
         <div className="mt-4">
           <FormPassword />
@@ -58,7 +58,7 @@ export default async function PaginaCuenta() {
       </section>
 
       {/* Cuenta */}
-      <section className="rounded-card border border-beige-dark/60 bg-crema p-5 sm:p-6">
+      <section className="rounded-card border border-beige-dark/60 bg-crema p-4 sm:p-6">
         <h2 className="flex items-center gap-2 font-display text-lg font-bold text-marron">
           <ShieldCheck className="h-5 w-5 text-tomate" aria-hidden />
           Tu cuenta
@@ -72,7 +72,7 @@ export default async function PaginaCuenta() {
           </div>
           <div>
             <dt className="text-xs font-bold uppercase tracking-wide text-marron/50">Correo</dt>
-            <dd className="mt-0.5 font-semibold text-marron">{usuario.email}</dd>
+            <dd className="mt-0.5 break-all font-semibold text-marron">{usuario.email}</dd>
           </div>
           <div>
             <dt className="text-xs font-bold uppercase tracking-wide text-marron/50">Miembro desde</dt>

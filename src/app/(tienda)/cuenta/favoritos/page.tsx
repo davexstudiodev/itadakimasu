@@ -34,7 +34,7 @@ export default async function PaginaFavoritos() {
       <p className="mb-4 text-sm text-marron/60">
         {productos.length} producto{productos.length === 1 ? "" : "s"} guardado{productos.length === 1 ? "" : "s"}
       </p>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {productos.map((p, i) => (
           <ProductCard key={p.id} producto={p} indice={i} />
         ))}

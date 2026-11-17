@@ -17,7 +17,10 @@ export function NavCuenta() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Menú de cuenta" className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+    <nav
+      aria-label="Menú de cuenta"
+      className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-1 lg:gap-1.5"
+    >
       {ITEMS.map(({ href, texto, icono: Icono }) => {
         const activo = href === "/cuenta" ? pathname === "/cuenta" : pathname.startsWith(href);
         return (
@@ -26,7 +29,7 @@ export function NavCuenta() {
             href={href}
             aria-current={activo ? "page" : undefined}
             className={cn(
-              "flex shrink-0 items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors",
+              "flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition-colors sm:justify-start sm:text-sm lg:px-4",
               activo ? "bg-tomate text-crema shadow-[0_8px_18px_-12px_rgba(217,75,56,0.9)]" : "text-marron hover:bg-beige"
             )}
           >

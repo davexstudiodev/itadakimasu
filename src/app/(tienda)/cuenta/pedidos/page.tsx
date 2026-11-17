@@ -54,7 +54,7 @@ export default async function PaginaPedidos() {
           href={`/confirmacion/${p.numero}`}
           className="group block rounded-card border border-beige-dark/60 bg-white p-4 transition-all hover:-translate-y-0.5 hover:border-tomate/40 hover:shadow-card sm:p-5"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
             <div>
               <p className="flex items-center gap-2 font-display font-bold text-marron">
                 #{p.numero}
@@ -79,15 +79,15 @@ export default async function PaginaPedidos() {
             )}
           </ul>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-beige-dark/60 pt-3 text-sm">
-            <p className="text-marron/65">
+          <div className="mt-3 flex flex-col gap-2 border-t border-beige-dark/60 pt-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <p className="break-words text-marron/65">
               {p.items.reduce((s, i) => s + i.cantidad, 0)} artículo{p.items.reduce((s, i) => s + i.cantidad, 0) === 1 ? "" : "s"}
               {" · "}
               {ETIQUETAS_PAGO[p.metodoPago] ?? p.metodoPago}
               {" · "}
               {ETIQUETAS_ENVIO[p.metodoEnvio] ?? p.metodoEnvio}
             </p>
-            <p className="font-black text-tomate">{formatPEN(p.total)}</p>
+            <p className="self-end font-black text-tomate sm:self-auto">{formatPEN(p.total)}</p>
           </div>
         </Link>
       ))}

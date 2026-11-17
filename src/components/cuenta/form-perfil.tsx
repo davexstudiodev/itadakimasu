@@ -67,7 +67,7 @@ export function FormPerfil({ perfil }: { perfil: Perfil }) {
         </div>
       </div>
 
-      <button type="submit" disabled={pendiente} className="btn-primary px-6 py-3">
+      <button type="submit" disabled={pendiente} className="btn-primary w-full px-6 py-3 sm:w-auto">
         {pendiente ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
         Guardar cambios
       </button>
