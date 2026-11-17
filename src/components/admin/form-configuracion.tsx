@@ -164,6 +164,26 @@ export function FormConfiguracion({ cfg }: { cfg: ConfiguracionTienda }) {
             <Store className="h-4 w-4 text-marron/50" aria-hidden />
             El recojo en tienda es gratuito
           </label>
+          <label className="mt-4 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-beige-dark/60 p-3.5">
+            <span>
+              <span className="block text-sm font-semibold text-marron">Autollenar ubicación en el checkout</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-marron/60">
+                Para direcciones nuevas: La Libertad, Ascope y Rázuri.
+              </span>
+            </span>
+            <span className="relative inline-flex h-6 w-11 shrink-0 items-center">
+              <input
+                type="checkbox"
+                name="autollenarUbicacionCheckout"
+                role="switch"
+                defaultChecked={cfg.autollenarUbicacionCheckout}
+                aria-label="Autollenar la ubicación de entrega en el checkout"
+                className="peer sr-only"
+              />
+              <span aria-hidden="true" className="absolute inset-0 rounded-full bg-marron/20 transition-colors peer-checked:bg-tomate peer-focus-visible:ring-2 peer-focus-visible:ring-tomate/40" />
+              <span aria-hidden="true" className="pointer-events-none relative ml-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+            </span>
+          </label>
         </section>
 
         {/* Medios de pago */}

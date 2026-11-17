@@ -123,6 +123,7 @@ export const CONFIG_SEED: ConfiguracionTienda = {
   envioCostoLocal: 0,
   envioGratisDesde: 0,
   recojoGratuito: true,
+  autollenarUbicacionCheckout: true,
   metodosPago: {
     yape: true,
     plin: false,

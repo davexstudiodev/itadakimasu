@@ -46,6 +46,12 @@ const CAMPOS_VACIOS = {
   indicaciones: "",
 };
 
+const UBICACION_PREDETERMINADA = {
+  departamento: "La Libertad",
+  provincia: "Ascope",
+  distrito: "Rázuri",
+};
+
 export function CheckoutCliente({ direcciones, cfg, usuario }: Props) {
   const items = useCarrito((s) => s.items);
   const [estado, action, pendiente] = useActionState(crearPedido, ESTADO_INICIAL);
@@ -55,6 +61,12 @@ export function CheckoutCliente({ direcciones, cfg, usuario }: Props) {
   const [cuponAplicado, setCuponAplicado] = useState<string | null>(null);
   const [totales, setTotales] = useState<TotalesPreview | null>(null);
   const [dirId, setDirId] = useState<string>(direcciones[0]?.id ?? "nueva");
+  const nuevaDireccion = () => ({
+    ...CAMPOS_VACIOS,
+    nombreCompleto: usuario.nombre,
+    telefono: usuario.telefono,
+    ...(cfg.autollenarUbicacionCheckout ? UBICACION_PREDETERMINADA : {}),
+  });
   const [dir, setDir] = useState(() =>
     direcciones[0]
       ? {
@@ -67,7 +79,7 @@ export function CheckoutCliente({ direcciones, cfg, usuario }: Props) {
           referencia: direcciones[0].referencia ?? "",
           indicaciones: direcciones[0].indicaciones ?? "",
         }
-      : { ...CAMPOS_VACIOS, nombreCompleto: usuario.nombre, telefono: usuario.telefono }
+      : nuevaDireccion()
   );
 
   // Totales autoritativos del servidor
@@ -98,7 +110,7 @@ export function CheckoutCliente({ direcciones, cfg, usuario }: Props) {
         });
       }
     } else {
-      setDir({ ...CAMPOS_VACIOS, nombreCompleto: usuario.nombre, telefono: usuario.telefono });
+      setDir(nuevaDireccion());
     }
   };
 

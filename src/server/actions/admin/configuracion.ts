@@ -31,6 +31,7 @@ export async function guardarConfiguracion(
     envioCostoLocal: numero(formData, "envioCostoLocal"),
     envioGratisDesde: numero(formData, "envioGratisDesde"),
     recojoGratuito: casilla(formData, "recojoGratuito"),
+    autollenarUbicacionCheckout: casilla(formData, "autollenarUbicacionCheckout"),
     mensajeBoasvindas: String(formData.get("mensajeBoasvindas") ?? ""),
     pagoYape: casilla(formData, "pagoYape"),
     pagoPlin: casilla(formData, "pagoPlin"),
@@ -65,6 +66,7 @@ export async function guardarConfiguracion(
     envioCostoLocal: d.envioCostoLocal,
     envioGratisDesde: d.envioGratisDesde,
     recojoGratuito: d.recojoGratuito,
+    autollenarUbicacionCheckout: d.autollenarUbicacionCheckout,
     metodosPago: {
       yape: d.pagoYape,
       plin: d.pagoPlin,
