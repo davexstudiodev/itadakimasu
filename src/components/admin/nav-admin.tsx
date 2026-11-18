@@ -10,6 +10,7 @@ import {
   Ticket,
   Users,
   Settings,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils/cn";
 const ITEMS: { href: string; texto: string; icono: LucideIcon }[] = [
   { href: "/admin", texto: "Dashboard", icono: LayoutDashboard },
   { href: "/admin/productos", texto: "Productos", icono: Package },
+  { href: "/admin/anuncios", texto: "Anuncios IA", icono: Sparkles },
   { href: "/admin/inventario", texto: "Inventario", icono: Boxes },
   { href: "/admin/pedidos", texto: "Pedidos", icono: Receipt },
   { href: "/admin/cupones", texto: "Cupones", icono: Ticket },
