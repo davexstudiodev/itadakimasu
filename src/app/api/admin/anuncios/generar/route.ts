@@ -1,5 +1,7 @@
 import { generateText } from "ai";
+import { lookup } from "node:dns/promises";
 import { readFile } from "node:fs/promises";
+import { isIP } from "node:net";
 import path from "node:path";
 import { z } from "zod";
 import { getUsuarioActual } from "@/lib/auth";
@@ -41,6 +43,91 @@ const ASPECT_RATIOS = {
   banner: "16:9",
 } as const;
 
+function ipv4Numero(ip: string): number {
+  return ip.split(".").reduce((acumulado, parte) => acumulado * 256 + Number(parte), 0);
+}
+
+function ipv4EsPrivada(ip: string): boolean {
+  const numero = ipv4Numero(ip);
+  const rangos: [string, number][] = [
+    ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8],
+    ["169.254.0.0", 16], ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.0.2.0", 24],
+    ["192.168.0.0", 16], ["198.18.0.0", 15], ["198.51.100.0", 24],
+    ["203.0.113.0", 24], ["224.0.0.0", 4],
+  ];
+  return rangos.some(([red, bits]) => {
+    const mascara = (0xffffffff << (32 - bits)) >>> 0;
+    return ((numero & mascara) >>> 0) === ((ipv4Numero(red) & mascara) >>> 0);
+  });
+}
+
+function direccionEsPublica(ip: string): boolean {
+  const version = isIP(ip);
+  if (version === 4) return !ipv4EsPrivada(ip);
+  if (version !== 6) return false;
+
+  const normalizada = ip.toLowerCase();
+  if (normalizada.startsWith("::ffff:") || normalizada === "::" || normalizada === "::1") return false;
+  const primerBloque = Number.parseInt(normalizada.split(":")[0] || "0", 16);
+  return primerBloque >= 0x2000 && primerBloque <= 0x3fff && !normalizada.startsWith("2001:db8:");
+}
+
+async function validarUrlImagen(url: URL, origenApp: string) {
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("Usa un enlace directo que empiece con https://.");
+  }
+  if (url.username || url.password || url.port && url.port !== "80" && url.port !== "443") {
+    throw new Error("El enlace de la foto no es válido.");
+  }
+  if (url.origin === origenApp) return;
+
+  const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase().replace(/\.$/, "");
+  if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
+    throw new Error("El enlace debe apuntar a una imagen pública.");
+  }
+  const direcciones = await lookup(host, { all: true, verbatim: true });
+  if (direcciones.length === 0 || direcciones.some(({ address }) => !direccionEsPublica(address))) {
+    throw new Error("El enlace debe apuntar a una imagen pública.");
+  }
+}
+
+async function descargarImagenRemota(src: string, origenApp: string) {
+  let url: URL;
+  try {
+    url = new URL(src);
+  } catch {
+    throw new Error("La foto del producto no tiene una dirección válida.");
+  }
+
+  for (let intento = 0; intento < 4; intento += 1) {
+    await validarUrlImagen(url, origenApp);
+    const respuesta = await fetch(url, {
+      cache: "no-store",
+      redirect: "manual",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if ([301, 302, 303, 307, 308].includes(respuesta.status)) {
+      const destino = respuesta.headers.get("location");
+      if (!destino || intento === 3) throw new Error("El enlace de la foto redirige demasiadas veces.");
+      try {
+        url = new URL(destino, url);
+      } catch {
+        throw new Error("El enlace de la foto redirige a una dirección no válida.");
+      }
+      continue;
+    }
+    if (!respuesta.ok) throw new Error("No se pudo cargar la foto del producto.");
+    const tamano = Number(respuesta.headers.get("content-length") ?? 0);
+    if (tamano > MAX_TAMANO_IMAGEN) throw new Error("La foto supera el límite de 4 MB.");
+    const mime = respuesta.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
+    if (!extensionImagen(mime)) throw new Error("El enlace debe abrir una imagen JPG, PNG o WebP directa.");
+    const buffer = await respuesta.arrayBuffer();
+    if (buffer.byteLength > MAX_TAMANO_IMAGEN) throw new Error("La foto supera el límite de 4 MB.");
+    return { bytes: new Uint8Array(buffer), mime };
+  }
+  throw new Error("No se pudo cargar la foto del producto.");
+}
+
 async function leerFotoProducto(src: string, requestUrl: string) {
   let bytes: Uint8Array;
   let mime: string;
@@ -61,35 +148,9 @@ async function leerFotoProducto(src: string, requestUrl: string) {
     const extension = path.extname(archivo).toLowerCase();
     mime = extension === ".png" ? "image/png" : extension === ".webp" ? "image/webp" : "image/jpeg";
   } else {
-    let url: URL;
-    try {
-      url = new URL(src);
-    } catch {
-      throw new Error("La foto del producto no tiene una dirección válida.");
-    }
-
-    const dominiosPermitidos = new Set<string>([new URL(requestUrl).host]);
-    const urlSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (urlSupabase) dominiosPermitidos.add(new URL(urlSupabase).host);
-    const esOrigenLocal = url.origin === new URL(requestUrl).origin;
-    if ((!esOrigenLocal && url.protocol !== "https:") || !dominiosPermitidos.has(url.host)) {
-      throw new Error("Sube primero esta foto al almacenamiento de la tienda para poder generar el anuncio.");
-    }
-
-    const respuesta = await fetch(url, {
-      cache: "no-store",
-      redirect: "error",
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!respuesta.ok) throw new Error("No se pudo cargar la foto del producto.");
-    const tamano = Number(respuesta.headers.get("content-length") ?? 0);
-    if (tamano > MAX_TAMANO_IMAGEN) throw new Error("La foto supera el límite de 4 MB.");
-    mime = respuesta.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
-    const extension = extensionImagen(mime);
-    if (!extension) throw new Error("La foto debe ser JPG, PNG o WebP.");
-    const buffer = await respuesta.arrayBuffer();
-    if (buffer.byteLength > MAX_TAMANO_IMAGEN) throw new Error("La foto supera el límite de 4 MB.");
-    bytes = new Uint8Array(buffer);
+    const descargada = await descargarImagenRemota(src, new URL(requestUrl).origin);
+    bytes = descargada.bytes;
+    mime = descargada.mime;
   }
 
   if (!extensionImagen(mime) || bytes.length === 0 || bytes.length > MAX_TAMANO_IMAGEN) {
