@@ -264,10 +264,36 @@ export async function POST(request: Request) {
         "Cache-Control": "no-store",
       },
     });
-  } catch {
-    return Response.json(
-      { error: "No se pudo generar el anuncio. Revisa la conexión de IA o intenta de nuevo más tarde." },
-      { status: 502 }
-    );
+  } catch (fallo: unknown) {
+    const detalles =
+      fallo && typeof fallo === "object"
+        ? fallo as { name?: string; message?: string; statusCode?: number; responseBody?: string; cause?: { message?: string } }
+        : {};
+    const diagnostico = [detalles.message, detalles.responseBody, detalles.cause?.message]
+      .filter(Boolean)
+      .join(" ");
+    let codigo = "generacion_fallida";
+    let mensaje = "No se pudo generar. Intenta de nuevo más tarde.";
+
+    if (/401|403|unauthori[sz]ed|unauthenticated|oidc|credential|api.?key/i.test(diagnostico)) {
+      codigo = "gateway_sin_autorizacion";
+      mensaje = "La conexión del generador con el servicio de IA no está autorizada.";
+    } else if (/insufficient|credits?|budget|billing|payment required/i.test(diagnostico)) {
+      codigo = "sin_creditos";
+      mensaje = "El servicio de IA no tiene créditos disponibles. Revisa su facturación.";
+    } else if (/429|rate.?limit|too many requests/i.test(diagnostico)) {
+      codigo = "gateway_ocupado";
+      mensaje = "El servicio de IA está ocupado. Espera un momento y vuelve a intentarlo.";
+    } else if (/invalid .*provider options|invalid google provider options|unsupported .*option|imageconfig|responsemodalities/i.test(diagnostico)) {
+      codigo = "modelo_no_disponible";
+      mensaje = "La configuración actual del modelo de imágenes no es compatible.";
+    }
+
+    console.error("[anuncios] No se pudo completar la generación de imagen", {
+      codigo,
+      nombreError: detalles.name ?? "Error",
+      estado: detalles.statusCode ?? null,
+    });
+    return Response.json({ error: mensaje, codigo }, { status: 502 });
   }
 }
