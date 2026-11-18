@@ -1,8 +1,8 @@
-import { generateText } from "ai";
 import { lookup } from "node:dns/promises";
 import { readFile } from "node:fs/promises";
 import { isIP } from "node:net";
 import path from "node:path";
+import sharp from "sharp";
 import { z } from "zod";
 import { getUsuarioActual } from "@/lib/auth";
 import { getProvider } from "@/lib/data";
@@ -37,11 +37,68 @@ const ESTILOS = {
   kawaii: "kawaii, simpático y tierno, con detalles gráficos japoneses sutiles",
 } as const;
 
-const ASPECT_RATIOS = {
-  cuadrado: "1:1",
-  historia: "9:16",
-  banner: "16:9",
-} as const;
+const CLOUDFLARE_MODEL = "@cf/black-forest-labs/flux-2-klein-4b";
+
+function dimensionesAnuncio(formato: keyof typeof FORMATOS) {
+  if (formato === "historia") return { width: 768, height: 1365 };
+  if (formato === "banner") return { width: 1365, height: 768 };
+  return { width: 1024, height: 1024 };
+}
+
+async function generarConCloudflare({
+  prompt,
+  imagen,
+  formato,
+}: {
+  prompt: string;
+  imagen: Awaited<ReturnType<typeof leerFotoProducto>>;
+  formato: keyof typeof FORMATOS;
+}) {
+  const cuenta = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  if (!cuenta || !token) {
+    throw new Error("CLOUDFLARE_NOT_CONFIGURED");
+  }
+
+  const referencia = await sharp(imagen.bytes)
+    .resize(511, 511, { fit: "inside", withoutEnlargement: true })
+    .png()
+    .toBuffer();
+  const { width, height } = dimensionesAnuncio(formato);
+  const cuerpo = new FormData();
+  cuerpo.set("prompt", prompt);
+  cuerpo.set("input_image_0", new Blob([new Uint8Array(referencia)], { type: "image/png" }), "producto.png");
+  cuerpo.set("width", String(width));
+  cuerpo.set("height", String(height));
+
+  const respuesta = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(cuenta)}/ai/run/${CLOUDFLARE_MODEL}`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: cuerpo,
+      signal: AbortSignal.timeout(100_000),
+      cache: "no-store",
+    },
+  );
+
+  if (!respuesta.ok) {
+    const estado = respuesta.status;
+    console.error("[anuncios] Cloudflare Workers AI rechazó la generación", { estado });
+    throw new Error(estado === 401 || estado === 403 ? "CLOUDFLARE_AUTH_FAILED" : "CLOUDFLARE_GENERATION_FAILED");
+  }
+
+  const tipo = respuesta.headers.get("content-type")?.split(";")[0].trim() ?? "";
+  if (tipo.startsWith("image/")) {
+    return { bytes: Buffer.from(await respuesta.arrayBuffer()), mime: tipo };
+  }
+
+  const resultado = (await respuesta.json()) as { result?: { image?: string }; image?: string };
+  const base64 = resultado.result?.image ?? resultado.image;
+  if (typeof base64 !== "string") throw new Error("CLOUDFLARE_EMPTY_IMAGE");
+  const contenido = base64.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "");
+  return { bytes: Buffer.from(contenido, "base64"), mime: "image/png" };
+}
 
 function ipv4Numero(ip: string): number {
   return ip.split(".").reduce((acumulado, parte) => acumulado * 256 + Number(parte), 0);
@@ -220,7 +277,7 @@ export async function POST(request: Request) {
     "Crea una pieza publicitaria visual original para una tienda peruana de productos japoneses y coreanos.",
     `Formato: ${FORMATOS[parseado.data.formato]}.`,
     `Dirección de arte: ${ESTILOS[parseado.data.estilo]}.`,
-    "Usa la foto adjunta como referencia del producto y conserva su envase, logotipo y aspecto reconocible, sin sustituirlo por otro producto.",
+    "Usa la imagen de referencia 0 como foto del producto y conserva su envase, logotipo y aspecto reconocible, sin sustituirlo por otro producto.",
     "Haz una composición atractiva para comercio electrónico, iluminación de estudio y fondo limpio. No agregues texto, letras, logotipos nuevos, descuentos ni afirmaciones dentro de la imagen; el texto de anuncio se entrega aparte.",
     `Datos verificados del producto:\n${datosProducto}`,
     parseado.data.instrucciones.trim()
@@ -232,68 +289,40 @@ export async function POST(request: Request) {
     .join("\n\n");
 
   try {
-    const resultado = await generateText({
-      model: "google/gemini-3.1-flash-image",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            { type: "file", mediaType: imagenProducto.mime, data: imagenProducto.bytes },
-          ],
-        },
-      ],
-      providerOptions: {
-        google: {
-          responseModalities: ["TEXT", "IMAGE"],
-          imageConfig: { aspectRatio: ASPECT_RATIOS[parseado.data.formato], imageSize: "1K" },
-          thinkingConfig: { thinkingLevel: "minimal" },
-        },
-      },
-      abortSignal: AbortSignal.timeout(100_000),
+    const generado = await generarConCloudflare({
+      prompt,
+      imagen: imagenProducto,
+      formato: parseado.data.formato,
     });
 
-    const imagenGenerada = resultado.files.find((archivo) => archivo.mediaType.startsWith("image/"));
-    if (!imagenGenerada) {
+    if (!generado.bytes.length || !extensionImagen(generado.mime)) {
       return Response.json({ error: "La IA no devolvió una imagen. Prueba con otra foto." }, { status: 502 });
     }
-    return new Response(Buffer.from(imagenGenerada.uint8Array), {
+    return new Response(generado.bytes, {
       headers: {
-        "Content-Type": imagenGenerada.mediaType,
-        "X-Anuncio-Texto": encodeURIComponent(resultado.text.trim()),
+        "Content-Type": generado.mime,
+        "X-Anuncio-Texto": encodeURIComponent(`${producto.nombre}: conoce más en Itadakimasu.`),
         "Cache-Control": "no-store",
       },
     });
   } catch (fallo: unknown) {
-    const detalles =
-      fallo && typeof fallo === "object"
-        ? fallo as { name?: string; message?: string; statusCode?: number; responseBody?: string; cause?: { message?: string } }
-        : {};
-    const diagnostico = [detalles.message, detalles.responseBody, detalles.cause?.message]
-      .filter(Boolean)
-      .join(" ");
-    let codigo = "generacion_fallida";
-    let mensaje = "No se pudo generar. Intenta de nuevo más tarde.";
-
-    if (/401|403|unauthori[sz]ed|unauthenticated|oidc|credential|api.?key/i.test(diagnostico)) {
-      codigo = "gateway_sin_autorizacion";
-      mensaje = "La conexión del generador con el servicio de IA no está autorizada.";
-    } else if (/insufficient|credits?|budget|billing|payment required/i.test(diagnostico)) {
-      codigo = "sin_creditos";
-      mensaje = "El servicio de IA no tiene créditos disponibles. Revisa su facturación.";
-    } else if (/429|rate.?limit|too many requests/i.test(diagnostico)) {
-      codigo = "gateway_ocupado";
-      mensaje = "El servicio de IA está ocupado. Espera un momento y vuelve a intentarlo.";
-    } else if (/invalid .*provider options|invalid google provider options|unsupported .*option|imageconfig|responsemodalities/i.test(diagnostico)) {
-      codigo = "modelo_no_disponible";
-      mensaje = "La configuración actual del modelo de imágenes no es compatible.";
+    const codigo = fallo instanceof Error ? fallo.message : "CLOUDFLARE_GENERATION_FAILED";
+    if (codigo === "CLOUDFLARE_NOT_CONFIGURED") {
+      return Response.json(
+        { error: "Falta conectar la cuenta gratuita de Cloudflare Workers AI en la configuración del sitio." },
+        { status: 503 },
+      );
     }
-
-    console.error("[anuncios] No se pudo completar la generación de imagen", {
-      codigo,
-      nombreError: detalles.name ?? "Error",
-      estado: detalles.statusCode ?? null,
-    });
-    return Response.json({ error: mensaje, codigo }, { status: 502 });
+    if (codigo === "CLOUDFLARE_AUTH_FAILED") {
+      return Response.json(
+        { error: "La conexión gratuita de Cloudflare no está autorizada. Revisa sus credenciales en Vercel." },
+        { status: 503 },
+      );
+    }
+    console.error("[anuncios] Falló la generación con Cloudflare Workers AI", { codigo });
+    return Response.json(
+      { error: "Cloudflare Workers AI no pudo generar la imagen. Revisa su cuota gratuita o vuelve a intentarlo." },
+      { status: 502 },
+    );
   }
 }
