@@ -84,8 +84,20 @@ async function generarConCloudflare({
 
   if (!respuesta.ok) {
     const estado = respuesta.status;
-    console.error("[anuncios] Cloudflare Workers AI rechazó la generación", { estado });
-    throw new Error(estado === 401 || estado === 403 ? "CLOUDFLARE_AUTH_FAILED" : "CLOUDFLARE_GENERATION_FAILED");
+    const cuerpoError = (await respuesta.json().catch(() => null)) as {
+      errors?: Array<{ code?: number | string; message?: string }>;
+    } | null;
+    const errores = (cuerpoError?.errors ?? []).slice(0, 3).map(({ code, message }) => ({
+      code: typeof code === "number" || typeof code === "string" ? code : undefined,
+      message: typeof message === "string"
+        ? message.replace(/Bearer\s+\S+/gi, "Bearer [redacted]").replace(/cfut_[A-Za-z0-9]+/g, "[redacted]").slice(0, 240)
+        : undefined,
+    }));
+    console.error("[anuncios] Cloudflare Workers AI rechazó la generación", { estado, errores });
+    if (estado === 401 || estado === 403) throw new Error("CLOUDFLARE_AUTH_FAILED");
+    if (estado === 429 || estado === 402) throw new Error("CLOUDFLARE_QUOTA_EXCEEDED");
+    if (estado === 400) throw new Error("CLOUDFLARE_BAD_REQUEST");
+    throw new Error("CLOUDFLARE_GENERATION_FAILED");
   }
 
   const tipo = respuesta.headers.get("content-type")?.split(";")[0].trim() ?? "";
@@ -319,9 +331,21 @@ export async function POST(request: Request) {
         { status: 503 },
       );
     }
+    if (codigo === "CLOUDFLARE_QUOTA_EXCEEDED") {
+      return Response.json(
+        { error: "Se alcanzó el límite gratuito diario de Cloudflare Workers AI. Inténtalo mañana." },
+        { status: 429 },
+      );
+    }
+    if (codigo === "CLOUDFLARE_BAD_REQUEST") {
+      return Response.json(
+        { error: "Cloudflare rechazó la foto o el formato del anuncio. Prueba otra imagen." },
+        { status: 502 },
+      );
+    }
     console.error("[anuncios] Falló la generación con Cloudflare Workers AI", { codigo });
     return Response.json(
-      { error: "Cloudflare Workers AI no pudo generar la imagen. Revisa su cuota gratuita o vuelve a intentarlo." },
+      { error: "Cloudflare Workers AI no pudo generar la imagen. Vuelve a intentarlo más tarde." },
       { status: 502 },
     );
   }
